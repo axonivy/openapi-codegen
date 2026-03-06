@@ -74,7 +74,7 @@ public class OpenApiSpec {
 
   public String baseUri(URI schemaUri) {
     List<Server> servers = openApi.getServers();
-    if (servers.isEmpty()) {
+    if (servers == null || servers.isEmpty()) {
       return null;
     }
     Server first = servers.iterator().next();

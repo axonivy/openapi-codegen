@@ -15,7 +15,7 @@ class OpenApi3Loader extends OpenAPIV3Parser {
     if (doClean) {
       typeHintCleaner.visitNode(node);
     }
-    return super.parseJsonNode(path, node);
+    return super.parseJsonNode(path, node, options);
   }
 
   public void doTypeCleanup(boolean cleanup) {
