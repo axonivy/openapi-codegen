@@ -1,0 +1,92 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "",
+    "version": ""
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8081/designer/api/"
+    }
+  ],
+  "paths": {
+    "/persons": {
+      "parameters": [],
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "operationId": "getPersons"
+      },
+      "put": {
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "operationId": "add"
+      }
+    },
+    "/persons/{entryNo}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "entryNo",
+          "required": true,
+          "schema": {
+            "format": "int32",
+            "type": "integer"
+          }
+        }
+      ],
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "operationId": "getPerson"
+      }
+    },
+    "/persons/{personId}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "personId",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "delete": {
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "operationId": "deletePerson"
+      },
+      "post": {
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "operationId": "update"
+      }
+    }
+  }
+}

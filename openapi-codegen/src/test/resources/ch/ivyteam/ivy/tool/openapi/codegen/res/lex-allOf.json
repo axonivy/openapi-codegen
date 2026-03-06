@@ -1,0 +1,333 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "2020-08-07",
+    "x-release": "v4",
+    "title": "Amazon Lex Runtime V2",
+    "description": "<p/>",
+    "x-logo": {
+      "url": "https://api.apis.guru/v2/cache/logo/https_twitter.com_awscloud_profile_image.png",
+      "backgroundColor": "#FFFFFF"
+    },
+    "termsOfService": "https://aws.amazon.com/service-terms/",
+    "contact": {
+      "name": "Mike Ralphson",
+      "email": "mike.ralphson@gmail.com",
+      "url": "https://github.com/mermade/aws2openapi",
+      "x-twitter": "PermittedSoc"
+    },
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "x-providerName": "amazonaws.com",
+    "x-serviceName": "runtime.lex.v2",
+    "x-aws-signingName": "lex",
+    "x-origin": [
+      {
+        "contentType": "application/json",
+        "url": "https://raw.githubusercontent.com/aws/aws-sdk-js/master/apis/runtime.lex.v2-2020-08-07.normal.json",
+        "converter": {
+          "url": "https://github.com/mermade/aws2openapi",
+          "version": "1.0.0"
+        },
+        "x-apisguru-driver": "external"
+      }
+    ],
+    "x-apiClientRegistration": {
+      "url": "https://portal.aws.amazon.com/gp/aws/developer/registration/index.html?nc2=h_ct"
+    },
+    "x-apisguru-categories": [
+      "cloud"
+    ],
+    "x-preferred": true
+  },
+  "externalDocs": {
+    "description": "Amazon Web Services documentation",
+    "url": "https://docs.aws.amazon.com/runtime-v2-lex/"
+  },
+  "servers": [
+    {
+      "url": "http://runtime-v2-lex.{region}.amazonaws.com",
+      "variables": {
+        "region": {
+          "description": "The AWS region",
+          "enum": [
+            "us-east-1"
+          ],
+          "default": "us-east-1"
+        }
+      },
+      "description": "The Lex Runtime V2 multi-region endpoint"
+    }
+  ],
+  "paths": {
+    "/bots/{botId}/botAliases/{botAliasId}/botLocales/{localeId}/sessions/{sessionId}/text": {
+      "post": {
+        "operationId": "RecognizeText",
+        "description": "<p>Sends user input to Amazon Lex V2. Client applications use this API to send requests to Amazon Lex V2 at runtime. Amazon Lex V2 then interprets the user input using the machine learning model that it build for the bot.</p> <p>In response, Amazon Lex V2 returns the next message to convey to the user and an optional response card to display.</p>",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecognizeTextResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "botId",
+            "in": "path",
+            "required": true,
+            "description": "The identifier of the bot that processes the request.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-zA-Z]+$",
+              "minLength": 10,
+              "maxLength": 10
+            }
+          },
+          {
+            "name": "botAliasId",
+            "in": "path",
+            "required": true,
+            "description": "The alias identifier in use for the bot that processes the request.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "localeId",
+            "in": "path",
+            "required": true,
+            "description": "The locale where the session is in use.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "description": "The identifier of the user session that is having the conversation.",
+            "schema": {
+              "type": "string",
+              "pattern": "[0-9a-zA-Z._:-]+",
+              "minLength": 2,
+              "maxLength": 100
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "text"
+                ],
+                "properties": {
+                  "text": {
+                    "description": "The text that the user entered. Amazon Lex V2 interprets this text.",
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024,
+                    "format": "password"
+                  },
+                  "sessionState": {
+                    "description": "The state of the user's session with Amazon Lex V2.",
+                    "type": "object",
+                    "properties": {
+                      "dialogAction": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/DialogAction"
+                          },
+                          {
+                            "description": "The next step that Amazon Lex V2 should take in the conversation with a user."
+                          }
+                        ]
+                      },
+                      "intent": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/Intent"
+                          },
+                          {
+                            "description": "The active intent that Amazon Lex V2 is processing."
+                          }
+                        ]
+                      },
+                      "activeContexts": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/ActiveContextsList"
+                          },
+                          {
+                            "description": "One or more contexts that indicate to Amazon Lex V2 the context of a request. When a context is active, Amazon Lex V2 considers intents with the matching context as a trigger as the next intent in a session."
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "requestAttributes": {
+                    "description": "<p>Request-specific information passed between the client application and Amazon Lex V2 </p> <p>The namespace <code>x-amz-lex:</code> is reserved for special attributes. Don't create any request attributes with the prefix <code>x-amz-lex:</code>.</p>",
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "hmac": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "description": "Amazon Signature authorization v4",
+        "x-amazon-apigateway-authtype": "awsSigv4"
+      }
+    },
+    "schemas": {
+      "ActiveContextsList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ActiveContext"
+        },
+        "minItems": 0,
+        "maxItems": 20
+      },
+      "StringMap": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "NonEmptyString": {
+        "type": "string"
+      },
+      "String": {
+        "type": "string"
+      },
+      "StringA": {
+        "type": "string"
+      },
+      "ActiveContextTimeToLive": {
+        "type": "object",
+        "required": [
+          "timeToLiveInSeconds",
+          "turnsToLive"
+        ],
+        "properties": {
+          "timeToLiveInSeconds": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActiveContextTimeToLiveInSeconds"
+              },
+              {
+                "description": "The number of seconds that the context is active. You can specify between 5 and 86400 seconds (24 hours)."
+              }
+            ]
+          },
+          "turnsToLive": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActiveContextTurnsToLive"
+              },
+              {
+                "description": "The number of turns that the context is active. You can specify up to 20 turns. Each request and response from the bot is a turn."
+              }
+            ]
+          }
+        },
+        "description": "The time that a context is active. You can specify the time to live in seconds or in conversation turns."
+      },
+      "ActiveContextParametersMap": {
+        "type": "object",
+        "minProperties": 0,
+        "maxProperties": 10,
+        "additionalProperties": {
+          "$ref": "#/components/schemas/Text"
+        }
+      },
+      "ActiveContext": {
+        "type": "object",
+        "required": [
+          "name",
+          "timeToLive",
+          "contextAttributes"
+        ],
+        "properties": {
+          "name": {
+            "allOf": [
+              {
+                "type": "string",
+                "pattern": "^([A-Za-z]_?)+$",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              {
+                "description": "The name of the context."
+              }
+            ]
+          },
+          "timeToLive": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActiveContextTimeToLive"
+              },
+              {
+                "description": "Indicates the number of turns or seconds that the context is active. Once the time to live expires, the context is no longer returned in a response."
+              }
+            ]
+          },
+          "contextAttributes": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ActiveContextParametersMap"
+              },
+              {
+                "description": "<p>A lis tof contexts active for the request. A context can be activated when a previous intent is fulfilled, or by including the context in the request.</p> <p>If you don't specify a list of contexts, Amazon Lex will use the current list of contexts for the session. If you specify an empty list, all contexts for the session are cleared. </p>"
+              }
+            ]
+          }
+        },
+        "description": "<p>Contains information about the contexts that a user is using in a session. You can configure Amazon Lex V2 to set a context when an intent is fulfilled, or you can set a context using the , , or operations.</p> <p>Use a context to indicate to Amazon Lex V2 intents that should be used as follow-up intents. For example, if the active context is <code>order-fulfilled</code>, only intents that have <code>order-fulfilled</code> configured as a trigger are considered for follow up.</p>"
+      },
+      "Text": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024,
+        "format": "password"
+      },
+      "ActiveContextTimeToLiveInSeconds": {
+        "type": "integer",
+        "minimum": 5,
+        "maximum": 86400
+      },
+      "ActiveContextTurnsToLive": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20
+      }
+    }
+  },
+  "security": [
+    {
+      "hmac": []
+    }
+  ]
+}
