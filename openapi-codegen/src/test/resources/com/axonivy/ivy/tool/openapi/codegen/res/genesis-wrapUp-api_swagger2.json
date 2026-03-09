@@ -1,0 +1,221 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "With the PureCloud Platform API, you can control all aspects of your PureCloud environment. With the APIs you can access the system configuration, manage conversations and more.",
+    "version": "v2",
+    "title": "PureCloud Platform API",
+    "termsOfService": "https://help.mypurecloud.com/articles/terms-and-conditions/",
+    "contact": {
+      "name": "PureCloud Developer Evangelists",
+      "url": "https://developer.mypurecloud.com",
+      "email": "DeveloperEvangelists@genesys.com"
+    },
+    "license": {
+      "name": "UNLICENSED",
+      "url": "https://help.mypurecloud.com/articles/terms-and-conditions/"
+    }
+  },
+  "host": "api.pure.cloud",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+
+  "paths": {
+    "/api/v2/outbound/wrapupcodemappings": {
+      "get": {
+        "tags": [
+          "Outbound"
+        ],
+        "summary": "Get the Dialer wrap up code mapping.",
+        "description": "",
+        "operationId": "getOutboundWrapupcodemappings",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "schema": {
+              "$ref": "#/definitions/WrapUpCodeMapping"
+            }
+          }
+        },
+        "security": [
+          {
+            "PureCloud OAuth": [
+              "outbound",
+              "outbound:readonly"
+            ]
+          }
+        ],
+        "x-inin-requires-permissions": {
+          "type": "ANY",
+          "permissions": [
+            "outbound:wrapUpCodeMapping:view"
+          ]
+        },
+        "x-purecloud-method-name": "getOutboundWrapupcodemappings"
+      }
+    }
+  },
+
+  "securityDefinitions": {
+    "PureCloud OAuth": {
+      "type": "oauth2",
+      "authorizationUrl": "https://login.apne2.pure.cloud/authorize",
+      "flow": "implicit",
+      "scopes": {
+        "all": "All the scopes"
+      }
+    },
+    "Guest Chat JWT": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+
+  "definitions": {
+    "WrapupCode": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The globally unique identifier for the object.",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "The wrap-up code name."
+        },
+        "dateCreated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time is represented as an ISO-8601 string. For example: yyyy-MM-ddTHH:mm:ss[.mmm]Z"
+        },
+        "dateModified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date time is represented as an ISO-8601 string. For example: yyyy-MM-ddTHH:mm:ss[.mmm]Z"
+        },
+        "modifiedBy": {
+          "type": "string"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "selfUri": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URI for this object",
+          "readOnly": true
+        }
+      }
+    },
+
+    
+    "WrapUpCodeMapping": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The globally unique identifier for the object.",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        },
+        "dateCreated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation time of the entity. Date time is represented as an ISO-8601 string. For example: yyyy-MM-ddTHH:mm:ss[.mmm]Z",
+          "readOnly": true
+        },
+        "dateModified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modified time of the entity. Date time is represented as an ISO-8601 string. For example: yyyy-MM-ddTHH:mm:ss[.mmm]Z",
+          "readOnly": true
+        },
+        "version": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Required for updates, must match the version number of the most recent update"
+        },
+        "defaultSet": {
+          "type": "array",
+          "description": "The default set of wrap-up flags. These will be used if there is no entry for a given wrap-up code in the mapping.",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "CONTACT_UNCALLABLE",
+              "NUMBER_UNCALLABLE",
+              "RIGHT_PARTY_CONTACT"
+            ],
+            "x-genesys-enum-members": [
+              {
+                "name": "CONTACT_UNCALLABLE"
+              },
+              {
+                "name": "NUMBER_UNCALLABLE"
+              },
+              {
+                "name": "RIGHT_PARTY_CONTACT"
+              }
+            ]
+          }
+        },
+        "mapping": {
+          "type": "object",
+          "description": "A map from wrap-up code identifiers to a set of wrap-up flags.",
+          "additionalProperties": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "CONTACT_UNCALLABLE",
+                "NUMBER_UNCALLABLE",
+                "RIGHT_PARTY_CONTACT"
+              ],
+              "x-genesys-enum-members": [
+                {
+                  "name": "CONTACT_UNCALLABLE"
+                },
+                {
+                  "name": "NUMBER_UNCALLABLE"
+                },
+                {
+                  "name": "RIGHT_PARTY_CONTACT"
+                }
+              ]
+            }
+          }
+        },
+        "selfUri": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URI for this object",
+          "readOnly": true
+        }
+      }
+    }
+  },
+    
+    
+  "externalDocs": {
+    "description": "PureCloud API Documentation",
+    "url": "https://developer.mypurecloud.com"
+  }
+}

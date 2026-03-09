@@ -1,0 +1,86 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "Swiss Mobility API (B2P API)",
+    "description" : "<p>The SBB Swiss Mobility API is an interface that you can integrate into your own distribution system. Timetable and fare details are made available to you via this interface. Initially, we are introducing SBB Swiss Mobilty API for Swiss domestic transport services, but we will be constantly developing it and adding new products and functions. There are two ways to use the service:</p><ul><li>Either integrate the SBB Swiss Mobility API as a full version, so that bookings are made directly via your distribution environment</li><li>Or use the Affiliate solution, with a link to the SBB webshop or SBB mobile</li></ul><p>Before you request access to our API, please get in contact with SBB Digital Affiliates by sending an email stating your intentions and goal. Please note that the purpose of our API is to generate sales turnover through it. Retrieving timetables and prices only is not permitted due to the Look2Book Ratio. Please check out our <a href=\"https://company.sbb.ch/en/sbb-as-business-partner/services/digital-sales-solutions/sales-solutions/sbb-swiss-mobility-api/sbb-swiss-mobility-api-gtc.html\">GTC</a> as well. On the right you can find the contact details and the links to the important websites.</p>",
+    "contact" : {
+      "name" : "SBB Digital Affiliates",
+      "url" : "https://company.sbb.ch/en/sbb-as-business-partner/services/digital-sales-solutions/sales-solutions/sbb-swiss-mobility-api.html",
+      "email" : "digitalsales@sbb.ch"
+    },
+    "license" : {
+      "name" : "SBB",
+      "url" : "https://b2p.app.sbb.ch"
+    },
+    "version" : "3.20.23"
+  },
+  "servers" : [ {
+    "url" : "https://b2p.app.sbb.ch",
+    "description" : "Mock (Production)"
+  }, {
+    "url" : "https://b2p-int.app.sbb.ch",
+    "description" : "Mock (Integration)"
+  }, {
+    "url" : "http://localhost:8787",
+    "description" : "Mock (Local)"
+  } ],
+  "paths" : {
+    "/api/trips" : {
+      "get" : {
+        "tags" : [ "Trip" ],
+        "description" : "The trips service returns different trips for a specified origin and destination (and vias). The UIC codes of the origin and destination can be resolved using the locations service.",
+        "operationId" : "getTrips",
+        "responses" : {
+          "200" : {
+            "description" : "A list of possible trips matching the specified locations and date/time.",
+            "headers" : {
+              "Scrollforward-Context" : {
+                "description" : "Scroll reference for the current response to scroll forward.",
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string"
+                }
+              },
+              "Scrollback-Context" : {
+                "description" : "Scroll reference for the current response to scroll backward.",
+                "style" : "simple",
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/Trip"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "DateTime" : {
+        "required" : [ "date" ],
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string",
+            "description" : "The local date.",
+            "format" : "date"
+          },
+          "time" : {
+            "$ref" : "#/components/schemas/LocalTime"
+          }
+        },
+        "description" : "A local date with optional time."
+      }
+    }
+  }
+}
