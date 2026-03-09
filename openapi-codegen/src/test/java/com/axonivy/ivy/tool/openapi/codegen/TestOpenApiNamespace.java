@@ -33,7 +33,7 @@ public class TestOpenApiNamespace {
 
   private static OpenAPI load(Supplier<InputStream> stream) throws IOException {
     try (var spec = stream.get()) {
-      return new OpenApiSpecParser().parse(spec);
+      return new OpenApiSpecParser().parse(spec).get().api();
     }
   }
 

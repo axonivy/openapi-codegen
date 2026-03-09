@@ -26,7 +26,7 @@ class TestOpenApiClientCodegen {
   @Test
   void simpleOpenApiDemo(@TempDir Path client) throws IOException {
     try (var in = TstRes.petstore()) {
-      OpenAPI openAPISpec = new OpenApiSpecParser().parse(in);
+      OpenAPI openAPISpec = new OpenApiSpecParser().parse(in).get().api();
       OpenApiCodegen generator = new OpenApiCodegen(openAPISpec);
       generator.setPackage("io.swagger.petstore");
       List<File> generated = generator.generateSources(client.toFile());
@@ -67,7 +67,7 @@ class TestOpenApiClientCodegen {
   @Test
   void genWithoutPackageHint(@TempDir Path client) throws IOException {
     try (var in = TstRes.petstore()) {
-      OpenAPI openAPISpec = new OpenApiSpecParser().parse(in);
+      OpenAPI openAPISpec = new OpenApiSpecParser().parse(in).get().api();
       OpenApiCodegen generator = new OpenApiCodegen(openAPISpec);
       List<File> generated = generator.generateSources(client.toFile());
       Path modelPath = generated.get(0).toPath();
@@ -81,7 +81,7 @@ class TestOpenApiClientCodegen {
   @Test
   void getWithoutSwaggerSchemaDeps(@TempDir Path client) throws IOException {
     try (var in = TstRes.petstore()) {
-      var openAPISpec = new OpenApiSpecParser().parse(in);
+      var openAPISpec = new OpenApiSpecParser().parse(in).get().api();
       var generator = new OpenApiCodegen(openAPISpec);
       var generated = generator.generateSources(client.toFile());
       assertThat(Files.readString(generated.get(0).toPath()))
@@ -96,7 +96,7 @@ class TestOpenApiClientCodegen {
   @Test
   void genWithoutJodaTime(@TempDir Path client) throws IOException {
     try (var in = TstRes.load("sbb-min.json")) {
-      var openAPISpec = new OpenApiSpecParser().parse(in);
+      var openAPISpec = new OpenApiSpecParser().parse(in).get().api();
       var generator = new OpenApiCodegen(openAPISpec);
       var generated = generator.generateSources(client.toFile());
       assertThat(generated)
@@ -111,7 +111,7 @@ class TestOpenApiClientCodegen {
   @Test
   void genesisEnum(@TempDir Path client) throws IOException {
     try (var in = TstRes.load("genesis-wrapUp-api_swagger2.json")) {
-      OpenAPI openAPISpec = new OpenApiSpecParser().parse(in);
+      OpenAPI openAPISpec = new OpenApiSpecParser().parse(in).get().api();
       Schema<?> wrapUpMap = openAPISpec.getComponents().getSchemas().get("WrapUpCodeMapping");
       @SuppressWarnings("rawtypes")
       Map<String, Schema> fields = wrapUpMap.getProperties();

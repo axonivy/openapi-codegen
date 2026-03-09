@@ -17,9 +17,6 @@ import io.swagger.v3.parser.util.DeserializationUtils;
 import io.swagger.v3.parser.util.DeserializationUtils.Options;
 
 public class OpenApiSpecParser {
-  public static final String OPENAPI_SPEC_JSON = "openapi.json";
-  public static final String OPENAPI_SPEC_YAML = "openapi.yaml";
-
   public final OpenApi3Loader v3Parser = new OpenApi3Loader();
   public final ParseOptions swaggerOpts = defaultOpts();
 
@@ -46,21 +43,23 @@ public class OpenApiSpecParser {
     return null;
   }
 
-  public OpenAPI parse(InputStream specStream) throws IOException {
+  public Optional<ParseResult> parse(InputStream specStream) throws IOException {
     String rawSpecJson = new String(specStream.readAllBytes(), StandardCharsets.UTF_8);
     return parse(rawSpecJson);
   }
 
-  public OpenAPI parse(String rawSpecJson) {
+  public Optional<ParseResult> parse(String rawSpecJson) {
     for (SwaggerParserExtension extension : getParsers()) {
       var api = Optional.of(extension.readContents(rawSpecJson,
           Collections.emptyList(), swaggerOpts)).map(SwaggerParseResult::getOpenAPI);
       if (api.isPresent()) {
-        return api.get();
+        return api.map(a -> new ParseResult(a, rawSpecJson));
       }
     }
-    return null;
+    return Optional.empty();
   }
+
+  public record ParseResult(OpenAPI api, String rawSpec) {}
 
   private static ParseOptions defaultOpts() {
     ParseOptions options = new ParseOptions();
