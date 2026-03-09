@@ -7,10 +7,12 @@
   <groupId>com.axonivy.ivy.tool.rest</groupId>
   <artifactId>openapi-codegen</artifactId>
   <version>1.0.0-SNAPSHOT</version>
+  <packaging>maven-plugin</packaging>
 
   <properties>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
+    <maven.version>3.9.13</maven.version>
   </properties>
 
   <name>openapi codegen</name>
@@ -49,6 +51,31 @@
       <artifactId>swagger-codegen-generators</artifactId>
       <version>1.0.60</version>
     </dependency>
+    
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${maven.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${maven.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <version>3.15.2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugin-testing</groupId>
+      <artifactId>maven-plugin-testing-harness</artifactId>
+      <version>3.5.1</version>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -63,6 +90,30 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-plugin-plugin</artifactId>
+        <version>3.15.2</version>
+        <configuration>
+          <goalPrefix>ivy</goalPrefix>
+        </configuration>
+        <executions>
+          <execution>
+            <id>mojo-descriptor</id>
+            <goals><goal>descriptor</goal></goals>
+          </execution>
+          <execution>
+            <id>help-goal</id>
+            <goals><goal>helpmojo</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <profile>

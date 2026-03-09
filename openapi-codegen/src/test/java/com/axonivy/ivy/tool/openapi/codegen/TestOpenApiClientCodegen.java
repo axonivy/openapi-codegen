@@ -71,8 +71,7 @@ class TestOpenApiClientCodegen {
       OpenApiCodegen generator = new OpenApiCodegen(openAPISpec);
       List<File> generated = generator.generateSources(client.toFile());
       Path modelPath = generated.get(0).toPath();
-      Path srcGenerated = client.resolve("src_generated");
-      Path swaggerDefaultPath = srcGenerated.resolve("com").resolve("axonivy")
+      Path swaggerDefaultPath = client.resolve("com").resolve("axonivy")
           .resolve("client").resolve("Category.java");
       assertThat(modelPath).as("package hint is optional")
           .isEqualTo(swaggerDefaultPath);
