@@ -10,6 +10,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import com.axonivy.ivy.tool.openapi.codegen.OpenApiCodegen;
+import com.axonivy.ivy.tool.openapi.codegen.OpenApiSpecBackup;
 import com.axonivy.ivy.tool.openapi.codegen.filter.ProgressFilter;
 import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
 
@@ -25,7 +26,7 @@ import io.swagger.v3.oas.models.OpenAPI;
  * <code>
  * mvn com.axonivy.ivy.tool.rest:openapi-codegen:generate-openapi-client
  * -Divy.generate.openapi.client.spec=https://petstore3.swagger.io/api/v3/openapi.json
- * -Divy.generate.openapi.client.output=src_generated/petstore
+ * -Divy.generate.openapi.client.output=src_generated/rest/petstore
  * -Divy.generate.openapi.client.package=com.swagger.petstore.client
  * </code>
  *
@@ -68,9 +69,15 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
 
   private OpenAPI loadOpenApi() throws MojoExecutionException {
     try (var in = openApiSpec.openStream()) {
-      return new OpenApiSpecParser().parse(in);
+      var result = new OpenApiSpecParser().parse(in);
+      if (result.isEmpty()) {
+        throw new MojoExecutionException("Failed to parse OpenAPI from " + openApiSpec);
+      }
+      OpenApiSpecBackup.write(outputDir, result.get().rawSpec());
+      return result.get().api();
     } catch (IOException ex) {
       throw new MojoExecutionException("Failed to read OpenAPI spec from " + openApiSpec, ex);
     }
   }
+
 }

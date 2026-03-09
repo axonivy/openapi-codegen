@@ -37,6 +37,10 @@ class TestOpenApiClientGeneratorMojo {
           .extracting(p -> p.getFileName().toString())
           .contains("Pet.java");
     }
+
+    assertThat(out.resolve("openapi.json"))
+        .as("Used OpenAPI spec is preserved as file; for OpenAPI inscription features")
+        .exists();
   }
 
 }

@@ -15,7 +15,6 @@ import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
 
 import io.swagger.v3.oas.models.OpenAPI;
 
-
 public class TestOpenApiSpec {
   private OpenApiSpec petStore;
   private OpenApiSpec petStore3;
@@ -70,7 +69,7 @@ public class TestOpenApiSpec {
 
   private static OpenAPI load(Supplier<InputStream> stream) throws IOException {
     try (var spec = stream.get()) {
-      return new OpenApiSpecParser().parse(spec);
+      return new OpenApiSpecParser().parse(spec).get().api();
     }
   }
 }
