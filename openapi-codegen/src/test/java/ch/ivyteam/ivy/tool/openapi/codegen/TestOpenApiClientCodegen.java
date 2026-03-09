@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -13,11 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.yaml.snakeyaml.LoaderOptions;
 
-import ch.ivyteam.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.util.DeserializationUtils;
+
+import ch.ivyteam.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
 
 class TestOpenApiClientCodegen {
 
@@ -45,6 +47,21 @@ class TestOpenApiClientCodegen {
     assertThat(Files.readString(sourceFile.toPath()))
         .as("generated to pre-set package")
         .contains("package io.swagger.petstore;");
+
+    var petJava = generated.stream()
+        .filter(f -> "Pet.java".equals(f.getName()))
+        .findFirst().get();
+    var pet = Files.readString(petJava.toPath(), StandardCharsets.UTF_8);
+    try (var in = TstRes.load("Pet.java")) {
+      var reference = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      assertThat(cleanTime(pet))
+          .as("generator output and imports remain stable")
+          .isEqualTo(cleanTime(reference));
+    }
+  }
+
+  private static String cleanTime(String generated) {
+    return generated.replaceFirst("\\@javax\\.annotation\\.Generated.*", "@javax.annotation.Generated");
   }
 
   @Test
@@ -125,29 +142,29 @@ class TestOpenApiClientCodegen {
 
   // @Test
   // void reducedIvyLogOutput(@TempDir Path client) throws IOException {
-  //   loadIvyLogConfig();
-  //   var logger = LogManager.getLogger("io.swagger.codegen.v3.generators.java.AbstractJavaCodegen");
-  //   var appender = new LoggerAccess.LogAppender();
-  //   appender.start();
-  //   appender.addTo(logger);
-  //   try (var in = TstRes.petstore()) {
-  //     OpenAPI openAPISpec = new OpenApiSpecParser().parse(in);
-  //     OpenApiCodegen generator = new OpenApiCodegen(openAPISpec);
-  //     generator.setPackage("io.swagger.petstore");
-  //     generator.generateSources(client.toFile(), null);
+  // loadIvyLogConfig();
+  // var logger = LogManager.getLogger("io.swagger.codegen.v3.generators.java.AbstractJavaCodegen");
+  // var appender = new LoggerAccess.LogAppender();
+  // appender.start();
+  // appender.addTo(logger);
+  // try (var in = TstRes.petstore()) {
+  // OpenAPI openAPISpec = new OpenApiSpecParser().parse(in);
+  // OpenApiCodegen generator = new OpenApiCodegen(openAPISpec);
+  // generator.setPackage("io.swagger.petstore");
+  // generator.generateSources(client.toFile(), null);
 
-  //     assertThat(appender.events())
-  //         .as("frequent false-positive swagger warnings should not distract the user")
-  //         .isEmpty();
-  //   } finally {
-  //     appender.removeFrom(logger);
-  //     appender.stop();
-  //   }
+  // assertThat(appender.events())
+  // .as("frequent false-positive swagger warnings should not distract the user")
+  // .isEmpty();
+  // } finally {
+  // appender.removeFrom(logger);
+  // appender.stop();
+  // }
   // }
 
   // @SuppressWarnings("restriction")
   // private void loadIvyLogConfig() {
-  //   ch.ivyteam.ivy.logging.LoggingSetup.loadLoggingConfig(null);
+  // ch.ivyteam.ivy.logging.LoggingSetup.loadLoggingConfig(null);
   // }
 
 }
