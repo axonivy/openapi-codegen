@@ -1,9 +1,9 @@
-package ch.ivyteam.ivy.tool.openapi.codegen.filter;
+package com.axonivy.ivy.tool.openapi.codegen.filter;
+
+import com.axonivy.ivy.tool.openapi.codegen.OpenApiSpec;
+import com.axonivy.ivy.tool.openapi.codegen.filter.FilteringGenerator.Filter;
 
 import io.swagger.v3.oas.models.OpenAPI;
-
-import ch.ivyteam.ivy.tool.openapi.codegen.OpenApiSpec;
-import ch.ivyteam.ivy.tool.openapi.codegen.filter.FilteringGenerator.Filter;
 
 public class ProgressFilter implements Filter {
 

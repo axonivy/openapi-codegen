@@ -1,4 +1,4 @@
-package ch.ivyteam.ivy.tool.openapi.codegen.loader;
+package com.axonivy.ivy.tool.openapi.codegen.loader;
 
 import java.util.Iterator;
 import java.util.Objects;

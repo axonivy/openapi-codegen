@@ -1,4 +1,4 @@
-package ch.ivyteam.ivy.tool.openapi.codegen.filter;
+package com.axonivy.ivy.tool.openapi.codegen.filter;
 
 import java.io.File;
 import java.io.IOException;

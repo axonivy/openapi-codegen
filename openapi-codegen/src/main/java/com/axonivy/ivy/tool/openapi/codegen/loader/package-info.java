@@ -5,4 +5,4 @@
  * ch.ivyteam.ivy.rest.client.config.restricted.openapi
  * in order to avoid dependencies to the ivy-core.
  */
-package ch.ivyteam.ivy.tool.openapi.codegen.loader;
+package com.axonivy.ivy.tool.openapi.codegen.loader;

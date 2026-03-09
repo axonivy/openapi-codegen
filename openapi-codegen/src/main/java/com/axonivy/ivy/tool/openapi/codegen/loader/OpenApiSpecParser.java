@@ -1,4 +1,4 @@
-package ch.ivyteam.ivy.tool.openapi.codegen.loader;
+package com.axonivy.ivy.tool.openapi.codegen.loader;
 
 import java.io.IOException;
 import java.io.InputStream;

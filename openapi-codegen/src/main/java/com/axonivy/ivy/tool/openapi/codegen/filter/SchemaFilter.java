@@ -1,11 +1,11 @@
-package ch.ivyteam.ivy.tool.openapi.codegen.filter;
+package com.axonivy.ivy.tool.openapi.codegen.filter;
 
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 
-import ch.ivyteam.ivy.tool.openapi.codegen.filter.FilteringGenerator.Filter;
+import com.axonivy.ivy.tool.openapi.codegen.filter.FilteringGenerator.Filter;
 
 
 /**

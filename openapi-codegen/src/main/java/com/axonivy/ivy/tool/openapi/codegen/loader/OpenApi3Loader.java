@@ -1,4 +1,4 @@
-package ch.ivyteam.ivy.tool.openapi.codegen.loader;
+package com.axonivy.ivy.tool.openapi.codegen.loader;
 
 import com.fasterxml.jackson.databind.JsonNode;
 

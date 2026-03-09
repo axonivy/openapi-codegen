@@ -1,4 +1,4 @@
-package ch.ivyteam.ivy.tool.openapi.codegen;
+package com.axonivy.ivy.tool.openapi.codegen;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,12 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.yaml.snakeyaml.LoaderOptions;
 
+import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
+
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.parser.util.DeserializationUtils;
-
-import ch.ivyteam.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
 
 class TestOpenApiClientCodegen {
 

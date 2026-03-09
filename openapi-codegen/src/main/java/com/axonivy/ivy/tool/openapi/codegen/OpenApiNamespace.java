@@ -1,4 +1,4 @@
-package ch.ivyteam.ivy.tool.openapi.codegen;
+package com.axonivy.ivy.tool.openapi.codegen;
 
 import java.net.URI;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package ch.ivyteam.ivy.tool.openapi.codegen;
+package com.axonivy.ivy.tool.openapi.codegen;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,7 +11,8 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import ch.ivyteam.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
+import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
+
 import io.swagger.v3.oas.models.OpenAPI;
 
 

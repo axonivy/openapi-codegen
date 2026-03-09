@@ -1,4 +1,4 @@
-package ch.ivyteam.ivy.tool.openapi.codegen;
+package com.axonivy.ivy.tool.openapi.codegen;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -8,16 +8,16 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.axonivy.ivy.tool.openapi.codegen.filter.FilteringGenerator;
+import com.axonivy.ivy.tool.openapi.codegen.filter.ProgressFilter;
+import com.axonivy.ivy.tool.openapi.codegen.filter.SchemaFilter;
+
 import io.swagger.codegen.v3.ClientOptInput;
 import io.swagger.codegen.v3.ClientOpts;
 import io.swagger.codegen.v3.CodegenArgument;
 import io.swagger.codegen.v3.CodegenConfig;
 import io.swagger.codegen.v3.CodegenConstants;
 import io.swagger.v3.oas.models.OpenAPI;
-
-import ch.ivyteam.ivy.tool.openapi.codegen.filter.FilteringGenerator;
-import ch.ivyteam.ivy.tool.openapi.codegen.filter.ProgressFilter;
-import ch.ivyteam.ivy.tool.openapi.codegen.filter.SchemaFilter;
 
 /**
  * @author rew
