@@ -93,7 +93,7 @@ public class OpenApiCodegen {
         boolArg(CodegenConstants.API_DOCS_OPTION, Boolean.FALSE));
 
     Map<String, String> CODEGEN_CONF = Map.of(
-        "sourceFolder", "src_generated",
+        "sourceFolder", "",
         "dateLibrary", DATE_LIBRARY);
   }
 
