@@ -32,7 +32,7 @@ import io.swagger.v3.oas.models.OpenAPI;
  *
  * @since 1.0.0
  */
-@Mojo(name = OpenApiClientGeneratorMojo.GOAL)
+@Mojo(name = OpenApiClientGeneratorMojo.GOAL, requiresProject = false)
 public class OpenApiClientGeneratorMojo extends AbstractMojo {
   public static final String GOAL = "generate-openapi-client";
 
