@@ -1,9 +1,11 @@
 package com.axonivy.ivy.tool.openapi.codegen.filter;
 
+import java.util.Map;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.axonivy.ivy.tool.openapi.codegen.OpenApiSpec;
 import com.axonivy.ivy.tool.openapi.codegen.filter.FilteringGenerator.Filter;
 
 import io.swagger.v3.oas.models.OpenAPI;
@@ -16,7 +18,7 @@ public class ProgressFilter implements Filter {
   private int done;
 
   public ProgressFilter(OpenAPI openApi) {
-    this.total = new OpenApiSpec(openApi).getModelCount();
+    this.total = Optional.ofNullable(openApi.getComponents().getSchemas()).map(Map::size).orElse(0);
     this.done = 0;
   }
 
