@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import org.apache.maven.api.plugin.testing.InjectMojo;
 import org.apache.maven.api.plugin.testing.MojoTest;
@@ -41,6 +42,23 @@ class TestOpenApiClientGeneratorMojo {
     assertThat(out.resolve("openapi.json"))
         .as("Used OpenAPI spec is preserved as file; for OpenAPI inscription features")
         .exists();
+  }
+
+  @Test
+  void regenerate_cleanup(@TempDir Path out) throws Exception {
+    mojo.openApiSpec = TstRes.petstoreUri().toURL();
+    mojo.clientPackage = "com.swagger.petstore";
+    mojo.outputDir = out;
+
+    var legacy = out.resolve("legacy").resolve("MyClient.java");
+    Files.createDirectories(legacy.getParent());
+    Files.writeString(legacy, "package legacy;", StandardOpenOption.CREATE_NEW);
+
+    mojo.execute();
+
+    assertThat(legacy)
+        .as("existing client is removed before re-generation")
+        .doesNotExist();
   }
 
 }
