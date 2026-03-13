@@ -28,7 +28,7 @@ class TestOpenApiClientGeneratorMojo {
   @Test
   void generate(@TempDir Path out) throws Exception {
     mojo.openApiSpec = TstRes.petstoreUri().toURL();
-    mojo.clientPackage = "com.swagger.petstore";
+    mojo.namespace = "com.swagger.petstore";
     mojo.outputDir = out;
     mojo.execute();
 
@@ -47,7 +47,7 @@ class TestOpenApiClientGeneratorMojo {
   @Test
   void regenerate_cleanup(@TempDir Path out) throws Exception {
     mojo.openApiSpec = TstRes.petstoreUri().toURL();
-    mojo.clientPackage = "com.swagger.petstore";
+    mojo.namespace = "com.swagger.petstore";
     mojo.outputDir = out;
 
     var legacy = out.resolve("legacy").resolve("MyClient.java");
