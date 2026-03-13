@@ -1,9 +1,13 @@
 # OpenAPI Codegen
 
-[![snapshot-version][snap]][sonatype]
+[![release-version][release-shield]][release]
+[![snapshot-version][snap-shield]][snap]
 
-[snap]: https://img.shields.io/maven-metadata/v?versionPrefix=1&label=dev&logo=sonatype&metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fcom%2Faxonivy%2Fivy%2Ftool%2Frest%2Fopenapi-codegen%2Fmaven-metadata.xml
-[sonatype]: https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/com/axonivy/ivy/tool/rest/openapi-codegen/
+[snap-shield]: https://img.shields.io/maven-metadata/v?versionPrefix=1&label=dev&logo=sonatype&metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fcom%2Faxonivy%2Fivy%2Ftool%2Frest%2Fopenapi-codegen%2Fmaven-metadata.xml
+[snap]: https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/com/axonivy/ivy/tool/rest/openapi-codegen/
+
+[release-shield]: https://img.shields.io/maven-metadata/v.svg?label=Stable&logo=apachemaven&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Faxonivy%2Fivy%2Ftool%2Frest%2Fopenapi-codegen%2Fmaven-metadata.xml
+[release]: https://repo1.maven.org/maven2/com/axonivy/ivy/tool/rest/openapi-codegen/
 
 This tool generates an Axon Ivy compatible REST Client from an OpenAPI specification.
 
@@ -85,4 +89,10 @@ RestClients:
     </dependencies>
   </plugin>
 
+## Releasing
 
+1. Run the [release](actions/workflows/release.yml) pipeline and merge the PR that initiates the next development cycle.
+2. Go to Github [releases](releases) and edit the latest draft release. 
+   - set the 'tag' to the one which was just produced by the previous release run
+   - publish it as latest release
+3. Update the `openapi.codegen.tool.version` property, stated in the associated [ivy-parent-pom](https://github.com/axonivy/core/tree/master/maven/java-api/ivy-project-parent/pom.xml).
