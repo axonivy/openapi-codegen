@@ -44,8 +44,8 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
   @Parameter(property = "ivy.generate.openapi.client.output", required = true)
   Path outputDir;
 
-  @Parameter(property = "ivy.generate.openapi.client.package")
-  String clientPackage;
+  @Parameter(property = "ivy.generate.openapi.client.namespace")
+  String namespace;
 
   /**
    * Generate types for generic 'allOf', 'anyOf' references.
@@ -67,8 +67,8 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
     client.backupSpec(parsed.rawSpec());
 
     var generator = new OpenApiCodegen(parsed.api());
-    if (clientPackage != null) {
-      generator.setPackage(clientPackage);
+    if (namespace != null) {
+      generator.setPackage(namespace);
     }
 
     ProgressFilter.muteDefaultWriteLog();
