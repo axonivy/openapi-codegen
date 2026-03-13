@@ -9,12 +9,11 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+import com.axonivy.ivy.tool.openapi.codegen.OpenApiClientFiles;
 import com.axonivy.ivy.tool.openapi.codegen.OpenApiCodegen;
-import com.axonivy.ivy.tool.openapi.codegen.OpenApiSpecBackup;
 import com.axonivy.ivy.tool.openapi.codegen.filter.ProgressFilter;
 import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
-
-import io.swagger.v3.oas.models.OpenAPI;
+import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser.ParseResult;
 
 /**
  * <p>
@@ -54,10 +53,13 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
       return;
     }
     getLog().info("Generating OpenAPI client sources...");
+    var parsed = parseOpenAPI();
 
-    var openAPI = loadOpenApi();
-    var generator = new OpenApiCodegen(openAPI);
+    var client = new OpenApiClientFiles(outputDir);
+    client.cleanup(getLog()::info);
+    client.backupSpec(parsed.rawSpec());
 
+    var generator = new OpenApiCodegen(parsed.api());
     if (clientPackage != null) {
       generator.setPackage(clientPackage);
     }
@@ -67,14 +69,10 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
     getLog().info("Wrote " + sources.size() + " sources");
   }
 
-  private OpenAPI loadOpenApi() throws MojoExecutionException {
+  private ParseResult parseOpenAPI() throws MojoExecutionException {
     try (var in = openApiSpec.openStream()) {
-      var result = new OpenApiSpecParser().parse(in);
-      if (result.isEmpty()) {
-        throw new MojoExecutionException("Failed to parse OpenAPI from " + openApiSpec);
-      }
-      OpenApiSpecBackup.write(outputDir, result.get().rawSpec());
-      return result.get().api();
+      return new OpenApiSpecParser().parse(in)
+          .orElseThrow(() -> new MojoExecutionException("Failed to parse OpenAPI from " + openApiSpec));
     } catch (IOException ex) {
       throw new MojoExecutionException("Failed to read OpenAPI spec from " + openApiSpec, ex);
     }
