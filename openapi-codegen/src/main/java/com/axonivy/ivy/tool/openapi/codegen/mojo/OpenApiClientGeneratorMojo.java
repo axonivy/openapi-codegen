@@ -41,11 +41,18 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
   @Parameter(property = "ivy.generate.openapi.client.spec", required = true)
   URL openApiSpec;
 
+  @Parameter(property = "ivy.generate.openapi.client.output", required = true)
+  Path outputDir;
+
   @Parameter(property = "ivy.generate.openapi.client.package")
   String clientPackage;
 
-  @Parameter(property = "ivy.generate.openapi.client.output", required = true)
-  Path outputDir;
+  /**
+   * Generate types for generic 'allOf', 'anyOf' references.
+   * This can help to build a valid client, if generated sources can't be compiled using the default options
+   */
+  @Parameter(property = "ivy.generate.openapi.client.resolveFully")
+  Boolean resolveFully;
 
   @Override
   public void execute() throws MojoExecutionException {
@@ -71,7 +78,11 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
 
   private ParseResult parseOpenAPI() throws MojoExecutionException {
     try (var in = openApiSpec.openStream()) {
-      return new OpenApiSpecParser().parse(in)
+      var parser = new OpenApiSpecParser();
+      if (resolveFully != null) {
+        parser.swaggerOpts.setResolveFully(resolveFully);
+      }
+      return parser.parse(in)
           .orElseThrow(() -> new MojoExecutionException("Failed to parse OpenAPI from " + openApiSpec));
     } catch (IOException ex) {
       throw new MojoExecutionException("Failed to read OpenAPI spec from " + openApiSpec, ex);
