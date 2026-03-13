@@ -63,3 +63,26 @@ RestClients:
       SpecUrl: https://petstore3.swagger.io/api/v3/openapi.json
       Namespace: io.swagger.petstore.client
 ```
+
+## FAQ
+
+- A newer swagger codegen plugin is out, which promises to fix a generator issues I have in an OpenAPI spec. Can I use it?
+
+  > Yes, just add your preferred version to the `<dependencies>` of the plugin.
+  > As long as the APIs are compatible, it will run.
+
+  ```xml
+  <plugin>
+    <groupId>com.axonivy.ivy.tool.rest</groupId>
+    <artifactId>openapi-codegen</artifactId>
+    ...
+    <dependencies>
+      <dependency>
+        <groupId>io.swagger.codegen.v3</groupId>
+        <artifactId>swagger-codegen</artifactId>
+        <version>3.0.75</version>
+      </dependency>
+    </dependencies>
+  </plugin>
+
+
