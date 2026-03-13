@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 
 import com.axonivy.ivy.tool.openapi.codegen.filter.FilteringGenerator.Filter;
 
+import io.swagger.codegen.v3.AbstractGenerator;
+import io.swagger.codegen.v3.generators.java.AbstractJavaCodegen;
 import io.swagger.v3.oas.models.OpenAPI;
 
 public class ProgressFilter implements Filter {
@@ -23,7 +25,12 @@ public class ProgressFilter implements Filter {
   }
 
   public static void muteDefaultWriteLog() {
-    System.setProperty("org.slf4j.simpleLogger.log.io.swagger.codegen.v3.AbstractGenerator", "warn");
+    setLevel(AbstractGenerator.class.getName(), "warn"); // write-log without progress
+    setLevel(AbstractJavaCodegen.class.getName(), "error"); // many irrelevant name warnings
+  }
+
+  private static void setLevel(String logger, String level) {
+    System.setProperty("org.slf4j.simpleLogger.log." + logger, level);
   }
 
   @Override
