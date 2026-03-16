@@ -12,7 +12,7 @@
   <properties>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <maven.version>3.9.13</maven.version>
+    <maven.version>3.9.14</maven.version>
   </properties>
 
   <name>openapi codegen</name>
