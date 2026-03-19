@@ -1,8 +1,11 @@
 package com.axonivy.ivy.tool.openapi.codegen.mojo;
 
-import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -38,8 +41,9 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
   @Parameter(property = "ivy.generate.openapi.client.skip", defaultValue = "false")
   boolean skipGenerate;
 
+  /** URI or Path to an openapi.json or openapi.yaml */
   @Parameter(property = "ivy.generate.openapi.client.spec", required = true)
-  URL openApiSpec;
+  String openApiSpec;
 
   @Parameter(property = "ivy.generate.openapi.client.output", required = true)
   Path outputDir;
@@ -77,15 +81,35 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
   }
 
   private ParseResult parseOpenAPI() throws MojoExecutionException {
-    try (var in = openApiSpec.openStream()) {
+    try (var in = specResource(openApiSpec).openStream()) {
       var parser = new OpenApiSpecParser();
       if (resolveFully != null) {
         parser.swaggerOpts.setResolveFully(resolveFully);
       }
       return parser.parse(in)
           .orElseThrow(() -> new MojoExecutionException("Failed to parse OpenAPI from " + openApiSpec));
-    } catch (IOException ex) {
+    } catch (Exception ex) {
       throw new MojoExecutionException("Failed to read OpenAPI spec from " + openApiSpec, ex);
+    }
+  }
+
+  static URL specResource(String openApiSpec) {
+    var res = URI.create(openApiSpec);
+    try {
+      return res.toURL();
+    } catch (Exception ex) {
+      var pathUri = Optional.ofNullable(openApiSpec)
+          .map(Path::of)
+          .filter(Files::exists)
+          .map(Path::toUri);
+      if (pathUri.isPresent()) {
+        try {
+          return pathUri.get().toURL();
+        } catch (MalformedURLException ex1) {
+          // ignore: throw initial error
+        }
+      }
+      throw new IllegalArgumentException("No OpenAPI resource at " + openApiSpec, ex);
     }
   }
 
