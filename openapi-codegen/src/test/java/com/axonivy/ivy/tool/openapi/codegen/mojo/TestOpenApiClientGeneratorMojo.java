@@ -2,6 +2,7 @@ package com.axonivy.ivy.tool.openapi.codegen.mojo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -27,7 +28,7 @@ class TestOpenApiClientGeneratorMojo {
 
   @Test
   void generate(@TempDir Path out) throws Exception {
-    mojo.openApiSpec = TstRes.petstoreUri().toURL();
+    mojo.openApiSpec = TstRes.petstoreUri().toString();
     mojo.namespace = "com.swagger.petstore";
     mojo.outputDir = out;
     mojo.execute();
@@ -46,7 +47,7 @@ class TestOpenApiClientGeneratorMojo {
 
   @Test
   void regenerate_cleanup(@TempDir Path out) throws Exception {
-    mojo.openApiSpec = TstRes.petstoreUri().toURL();
+    mojo.openApiSpec = TstRes.petstoreUri().toString();
     mojo.namespace = "com.swagger.petstore";
     mojo.outputDir = out;
 
@@ -59,6 +60,27 @@ class TestOpenApiClientGeneratorMojo {
     assertThat(legacy)
         .as("existing client is removed before re-generation")
         .doesNotExist();
+  }
+
+  @Test
+  void openApiSpec_asUri() throws Exception {
+    URI uri = TstRes.petstoreUri();
+    assertThat(uri.toString()).startsWith("file:");
+
+    assertThat(OpenApiClientGeneratorMojo.specResource(uri.toString()).toURI())
+        .isEqualTo(uri);
+  }
+
+  @Test
+  void openApiSpec_asPath() throws Exception {
+    URI uri = TstRes.petstoreUri();
+    String path = Path.of(uri).toString();
+    assertThat(path)
+        .as("plain filesystem paths are supported")
+        .doesNotStartWith("file:");
+
+    assertThat(OpenApiClientGeneratorMojo.specResource(path).toURI())
+        .isEqualTo(uri);
   }
 
 }
