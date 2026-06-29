@@ -94,8 +94,8 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
   }
 
   static URL specResource(String openApiSpec) {
-    var res = URI.create(openApiSpec);
     try {
+      var res = URI.create(openApiSpec);
       return res.toURL();
     } catch (Exception ex) {
       var pathUri = Optional.ofNullable(openApiSpec)
