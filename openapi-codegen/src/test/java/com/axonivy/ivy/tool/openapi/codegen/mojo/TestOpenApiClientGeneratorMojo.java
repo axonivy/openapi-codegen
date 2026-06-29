@@ -1,6 +1,7 @@
 package com.axonivy.ivy.tool.openapi.codegen.mojo;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -81,6 +82,12 @@ class TestOpenApiClientGeneratorMojo {
 
     assertThat(OpenApiClientGeneratorMojo.specResource(path).toURI())
         .isEqualTo(uri);
+  }
+
+  @Test
+  void openApiSpec_asUri_windows() throws Exception {
+    String winUri = "C:\\Users\\ReguelWermelingerAxo\\dev\\demo-projects\\connectivity\\connectivity-demos/src/io/swagger/petstore3/client/openapi.json";
+    assertThatThrownBy(() -> OpenApiClientGeneratorMojo.specResource(winUri));
   }
 
 }
