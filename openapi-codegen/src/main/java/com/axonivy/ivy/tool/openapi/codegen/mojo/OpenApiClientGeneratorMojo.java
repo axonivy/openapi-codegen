@@ -34,7 +34,7 @@ import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser.ParseResult
  *
  * @since 1.0.0
  */
-@Mojo(name = OpenApiClientGeneratorMojo.GOAL, requiresProject = false)
+@Mojo(name = OpenApiClientGeneratorMojo.GOAL, requiresProject = false, threadSafe = true)
 public class OpenApiClientGeneratorMojo extends AbstractMojo {
   public static final String GOAL = "generate-openapi-client";
 
