@@ -26,7 +26,7 @@ import java.util.List;
  * Pet
  */
 
-@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2026-03-09T10:37:46.032333499+01:00[Europe/Berlin]")
+@jakarta.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.JavaClientCodegen", date = "2026-03-09T10:37:46.032333499+01:00[Europe/Berlin]")
 
 public class Pet {
   @JsonProperty("id")

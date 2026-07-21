@@ -61,7 +61,7 @@ class TestOpenApiClientCodegen {
   }
 
   private static String cleanTime(String generated) {
-    return generated.replaceFirst("\\@javax\\.annotation\\.Generated.*", "@javax.annotation.Generated");
+    return generated.replaceFirst("\\@jakarta\\.annotation\\.Generated.*", "@jakarta.annotation.Generated");
   }
 
   @Test

@@ -94,7 +94,8 @@ public class OpenApiCodegen {
 
     Map<String, String> CODEGEN_CONF = Map.of(
         "sourceFolder", "",
-        "dateLibrary", DATE_LIBRARY);
+        "dateLibrary", DATE_LIBRARY,
+        "jakarta", "true");
   }
 
 }
