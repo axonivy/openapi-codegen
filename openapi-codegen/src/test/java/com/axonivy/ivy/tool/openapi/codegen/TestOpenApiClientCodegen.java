@@ -117,8 +117,9 @@ class TestOpenApiClientCodegen {
       Map<String, Schema> fields = wrapUpMap.getProperties();
       Schema<?> defaultSetEnum = fields.get("defaultSet");
       Schema<?> mappingMapEnum = fields.get("mapping");
-      assertThat(defaultSetEnum).isInstanceOf(ArraySchema.class)
-          .as("Array<String> and no hint on the enum in OpenAPI model > but in GeneratorModel");
+      assertThat(defaultSetEnum)
+          .as("Array<String> and no hint on the enum in OpenAPI model > but in GeneratorModel")
+          .isInstanceOf(ArraySchema.class);
       assertThat(mappingMapEnum.getAdditionalProperties())
           .as("Array<String> and no hint on the enum in OpenAPI model > but in GeneratorModel")
           .isInstanceOf(ArraySchema.class);
