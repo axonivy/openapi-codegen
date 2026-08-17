@@ -105,7 +105,7 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
       if (pathUri.isPresent()) {
         try {
           return pathUri.get().toURL();
-        } catch (MalformedURLException ex1) {
+        } catch (MalformedURLException _) {
           // ignore: throw initial error
         }
       }

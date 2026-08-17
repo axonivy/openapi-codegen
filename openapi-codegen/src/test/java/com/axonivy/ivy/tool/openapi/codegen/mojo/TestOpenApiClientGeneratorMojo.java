@@ -87,7 +87,6 @@ class TestOpenApiClientGeneratorMojo {
   @Test
   void openApiSpec_asUri_windows() throws Exception {
     String winUri = "C:\\Users\\ReguelWermelingerAxo\\dev\\demo-projects\\connectivity\\connectivity-demos/src/io/swagger/petstore3/client/openapi.json";
-    assertThatThrownBy(() -> OpenApiClientGeneratorMojo.specResource(winUri));
+    assertThatThrownBy(() -> OpenApiClientGeneratorMojo.specResource(winUri)).isInstanceOf(RuntimeException.class);
   }
-
 }
