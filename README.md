@@ -3,11 +3,11 @@
 [![release-version][release-shield]][release]
 [![snapshot-version][snap-shield]][snap]
 
-[snap-shield]: https://img.shields.io/maven-metadata/v?label=dev&logo=sonatype&metadataUrl=https%3A%2F%2Fcentral.sonatype.com%2Frepository%2Fmaven-snapshots%2Fcom%2Faxonivy%2Fivy%2Ftool%2Frest%2Fopenapi-codegen%2Fmaven-metadata.xml
-[snap]: https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/com/axonivy/ivy/tool/rest/openapi-codegen/
+[snap-shield]: https://img.shields.io/maven-metadata/v?label=dev&logo=apachemaven&metadataUrl=https%3A%2F%2Fnexus.axonivy.com%2Frepository%2Fmaven-snapshots%2Fcom%2Faxonivy%2Fivy%2Ftool%2Frest%2Fopenapi-codegen%2Fmaven-metadata.xml
+[snap]: https://nexus.axonivy.com/repository/maven-snapshots/com/axonivy/ivy/tool/rest/openapi-codegen/
 
-[release-shield]: https://img.shields.io/maven-metadata/v.svg?label=Stable&logo=apachemaven&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Faxonivy%2Fivy%2Ftool%2Frest%2Fopenapi-codegen%2Fmaven-metadata.xml
-[release]: https://repo1.maven.org/maven2/com/axonivy/ivy/tool/rest/openapi-codegen/
+[release-shield]: https://img.shields.io/maven-metadata/v.svg?label=Stable&logo=apachemaven&metadataUrl=https%3A%2F%2Fnexus.axonivy.com%2Frepository%2Fmaven-releases%2Fcom%2Faxonivy%2Fivy%2Ftool%2Frest%2Fopenapi-codegen%2Fmaven-metadata.xml
+[release]: https://nexus.axonivy.com/repository/maven-releases/com/axonivy/ivy/tool/rest/openapi-codegen/
 
 This tool generates an Axon Ivy compatible REST Client from an OpenAPI specification.
 
