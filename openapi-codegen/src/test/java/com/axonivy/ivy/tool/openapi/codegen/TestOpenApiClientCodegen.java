@@ -10,6 +10,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaFileObject;
+import javax.tools.ToolProvider;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -138,6 +142,49 @@ class TestOpenApiClientCodegen {
     OpenApiSpecParser.yamlOptions().setMaxYamlCodePoints(23);
     LoaderOptions swaggerYamlOpts = DeserializationUtils.buildLoaderOptions();
     assertThat(swaggerYamlOpts.getCodePointLimit()).isEqualTo(23);
+  }
+
+  /**
+   * ISSUE SUPPORT-1779 Open API 3.1 defaults
+   */
+  @Test
+  void openApi31_defaultInitializers(@TempDir Path client) throws IOException {
+    try (var in = TstRes.load("natif-31.json")) {
+      var parsed = new OpenApiSpecParser().parse(in).orElseThrow();
+      assertThat(parsed.rawSpec()).contains("\"default\":\"TestWorkflow\"");
+      var openApi = parsed.api();
+      assertThat(openApi.getOpenapi()).isEqualTo("3.1.0");
+
+      var generated = new OpenApiCodegen(openApi).generateSources(client.toFile());
+
+      assertThat(generated.stream()
+          .map(file -> file.getName()))
+          .contains("BBox.java", "ProcessingAccepted.java", "VerificationResponse.java");
+      var processingCompleted = generated.stream()
+        .filter(file -> file.getName().endsWith("ProcessingCompleted.java"))
+        .findFirst().orElseThrow();
+      assertThat(Files.readString(processingCompleted.toPath()))
+        .contains("workflowName = null;")
+        .doesNotContain("workflowName = TestWorkflow;");
+      
+      compile(generated, client);
+    }
+  }
+
+  private static void compile(List<File> sources, @TempDir Path client) throws IOException {
+    var compiler = ToolProvider.getSystemJavaCompiler();
+    var diagnostics = new DiagnosticCollector<JavaFileObject>();
+    var classes = client.resolve("classes");
+    Files.createDirectories(classes);
+    try (var fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
+      var units = fileManager.getJavaFileObjectsFromFiles(sources);
+      var compiled = compiler.getTask(null, fileManager, diagnostics,
+          List.of("-classpath", System.getProperty("java.class.path"), "-proc:none", "-d", classes.toString()),
+          null, units).call();
+      assertThat(compiled)
+          .withFailMessage("Generated support spec models failed to compile: %s", diagnostics.getDiagnostics())
+          .isTrue();
+    }
   }
 
   // @Test

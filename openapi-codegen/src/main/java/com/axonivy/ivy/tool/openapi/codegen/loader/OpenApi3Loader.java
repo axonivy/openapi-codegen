@@ -8,10 +8,12 @@ import io.swagger.v3.parser.core.models.SwaggerParseResult;
 
 class OpenApi3Loader extends OpenAPIV3Parser {
   private final TypeHintCleaner typeHintCleaner = new TypeHintCleaner();
+  private final StringDefaultCleaner stringDefaultCleaner = new StringDefaultCleaner();
   private boolean doClean = true;
 
   @Override
   public SwaggerParseResult parseJsonNode(String path, JsonNode node, ParseOptions options) {
+    stringDefaultCleaner.clean(node);
     if (doClean) {
       typeHintCleaner.visitNode(node);
     }
