@@ -231,6 +231,68 @@ class TestOpenApiClientCodegen {
   }
 
   @Test
+  void openApi31_defaults_inNestedAndComposedSchemas(@TempDir Path client) throws IOException {
+    var spec = """
+        {
+          "openapi": "3.1.0",
+          "info": {"title": "Nested defaults", "version": "1"},
+          "paths": {},
+          "components": {
+            "schemas": {
+              "Parent": {
+                "type": "object",
+                "properties": {
+                  "child": {
+                    "type": "object",
+                    "properties": {
+                      "nestedName": {"type": "string", "default": "nested"}
+                    }
+                  }
+                }
+              },
+              "AllOfParent": {
+                "allOf": [
+                  {"type": "object", "properties": {"baseName": {"type": "string"}}},
+                  {"type": "object", "properties": {
+                    "allOfName": {"type": "string", "default": "allOf"}
+                  }}
+                ]
+              },
+              "AnyOfParent": {
+                "anyOf": [
+                  {"type": "object", "properties": {
+                    "anyOfName": {"type": "string", "default": "anyOf"}
+                  }},
+                  {"type": "object", "properties": {"otherName": {"type": "string"}}}
+                ]
+              }
+            }
+          }
+        }
+        """;
+    var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
+
+    assertThat(parsed.propertyDefaults().values().stream()
+        .flatMap(properties -> properties.values().stream())
+        .map(value -> java.util.Objects.requireNonNull(value).asText())
+        .toList()).contains("nested", "allOf", "anyOf");
+    assertThat(parsed.propertyDefaults().get("Parent_child"))
+      .containsEntry("nestedName", TextNode.valueOf("nested"));
+    assertThat(parsed.propertyDefaults().get("AllOfParent"))
+      .containsEntry("allOfName", TextNode.valueOf("allOf"));
+    assertThat(parsed.propertyDefaults().get("AnyOfParent"))
+      .containsEntry("anyOfName", TextNode.valueOf("anyOf"));
+
+    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    assertThat(generated.stream().map(file -> java.util.Objects.requireNonNull(file).getName()).toList())
+      .contains("ParentChild.java", "AllOfParent.java", "AnyOfParent.java");
+    var childModel = generated.stream().filter(file -> file.getName().equals("ParentChild.java")).findFirst().orElseThrow();
+    var childSource = Files.readString(childModel.toPath());
+    assertThat(childSource).contains("nestedName = \"nested\";");
+    compile(generated, client);
+  }
+
+  @Test
   void textualDefaults_restoreEnumsAndFormattedTypes() {
     var generatedModel = """
         public class TypedDefaults {

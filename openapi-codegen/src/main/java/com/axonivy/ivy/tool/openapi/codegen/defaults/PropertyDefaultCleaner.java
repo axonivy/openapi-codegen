@@ -15,6 +15,7 @@ public class PropertyDefaultCleaner {
   private static final String DEFAULT = "default";
   private static final String OPENAPI_31_VERSION_PREFIX = "3.1.";
   private static final String SCHEMAS = "schemas";
+  private static final Set<String> COMPOSITION_KEYWORDS = Set.of("allOf", "anyOf", "oneOf");
   private static final Set<String> HTTP_METHODS = Set.of(
       "get", "put", "post", "delete", "options", "head", "patch", "trace");
   private final Map<String, Map<String, JsonNode>> removedDefaults = new LinkedHashMap<>();
@@ -69,21 +70,36 @@ public class PropertyDefaultCleaner {
   }
 
   private void cleanModelSchema(JsonNode schema, String modelName) {
-    JsonNode properties = schema.path("properties");
-    if (!(properties instanceof ObjectNode propertyObject)) {
+    if (!(schema instanceof ObjectNode)) {
       return;
     }
-    propertyObject.propertyStream().forEach(property -> {
-      if (!(property.getValue() instanceof ObjectNode propertySchema)) {
-        return;
+    JsonNode properties = schema.path("properties");
+    if (properties instanceof ObjectNode propertyObject) {
+      propertyObject.propertyStream().forEach(property -> {
+        if (!(property.getValue() instanceof ObjectNode propertySchema)) {
+          return;
+        }
+        JsonNode defaultValue = propertySchema.get(DEFAULT);
+        if (defaultValue != null) {
+          removedDefaults.computeIfAbsent(modelName, key -> new LinkedHashMap<>())
+              .put(property.getKey(), defaultValue.deepCopy());
+          propertySchema.remove(DEFAULT);
+        }
+        cleanModelSchema(propertySchema, modelName + "_" + property.getKey());
+      });
+    }
+
+    for (String keyword : COMPOSITION_KEYWORDS) {
+      for (JsonNode branch : schema.path(keyword)) {
+        cleanModelSchema(branch, modelName);
       }
-      JsonNode defaultValue = propertySchema.get(DEFAULT);
-      if (defaultValue != null) {
-        removedDefaults.computeIfAbsent(modelName, key -> new LinkedHashMap<>())
-            .put(property.getKey(), defaultValue.deepCopy());
-        propertySchema.remove(DEFAULT);
-      }
-    });
+    }
+    cleanModelSchema(schema.path("items"), modelName);
+    cleanModelSchema(schema.path("additionalProperties"), modelName);
+    cleanModelSchema(schema.path("not"), modelName);
+    cleanModelSchema(schema.path("if"), modelName);
+    cleanModelSchema(schema.path("then"), modelName);
+    cleanModelSchema(schema.path("else"), modelName);
   }
 
   public void clear() {
