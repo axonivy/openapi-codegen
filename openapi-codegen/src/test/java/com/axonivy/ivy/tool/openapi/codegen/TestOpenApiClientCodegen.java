@@ -154,21 +154,68 @@ class TestOpenApiClientCodegen {
       assertThat(parsed.rawSpec()).contains("\"default\":\"TestWorkflow\"");
       var openApi = parsed.api();
       assertThat(openApi.getOpenapi()).isEqualTo("3.1.0");
+      var generated = new OpenApiCodegen(openApi, parsed.propertyDefaults()).generateSources(client.toFile());
 
-      var generated = new OpenApiCodegen(openApi, parsed.stringDefaults()).generateSources(client.toFile());
-
-      assertThat(generated.stream()
-          .map(file -> file.getName()))
-          .contains("BBox.java", "ProcessingAccepted.java", "VerificationResponse.java");
       var processingCompleted = generated.stream()
         .filter(file -> file.getName().endsWith("ProcessingCompleted.java"))
         .findFirst().orElseThrow();
       assertThat(Files.readString(processingCompleted.toPath()))
-        .contains("workflowName = \"TestWorkflow\";")
-        .doesNotContain("workflowName = null;");
-      
-      compile(generated, client);
+          .contains("workflowName = \"TestWorkflow\";")
+          .doesNotContain("workflowName = null;");
     }
+  }
+
+  @Test
+  void openApi31_defaults_allTypes(@TempDir Path client) throws IOException {
+    var spec = """
+        {
+          "openapi": "3.1.0",
+          "info": {"title": "Defaults", "version": "1"},
+          "paths": {},
+          "components": {
+            "schemas": {
+              "DefaultValues": {
+                "type": "object",
+                "properties": {
+                  "label": {"type": "string", "default": "sample"},
+                  "count": {"type": "integer", "default": 3},
+                  "ratio": {"type": "number", "default": 0.5},
+                  "enabled": {"type": "boolean", "default": false},
+                  "labels": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": ["one", "two"]
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "default": {"source": "sample", "count": 2, "optional": null}
+                  },
+                  "optional": {"type": ["string", "null"], "default": null}
+                }
+              }
+            }
+          }
+        }
+        """;
+    var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
+    assertThat(parsed.propertyDefaults().get("DefaultValues").keySet())
+        .contains("label", "count", "ratio", "enabled", "labels", "metadata", "optional");
+
+    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    var source = Files.readString(generated.stream()
+        .filter(file -> file.getName().equals("DefaultValues.java"))
+        .findFirst().orElseThrow().toPath());
+    assertThat(source)
+        .contains("label = \"sample\";")
+        .contains("count = Integer.valueOf(\"3\");")
+        .contains("ratio = Double.valueOf(\"0.5\");")
+        .contains("enabled = false;")
+        .contains("labels = java.util.Arrays.asList(\"one\", \"two\");")
+        .contains("metadata = new java.util.LinkedHashMap<String, Object>() {{")
+        .contains("put(\"count\", Integer.valueOf(\"2\"));")
+        .contains("put(\"optional\", null);")
+        .contains("optional = null;");
+    compile(generated, client);
   }
 
   private static void compile(List<File> sources, @TempDir Path client) throws IOException {

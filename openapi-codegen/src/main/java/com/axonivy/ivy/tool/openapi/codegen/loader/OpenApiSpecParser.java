@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.extensions.SwaggerParserExtension;
@@ -50,18 +52,18 @@ public class OpenApiSpecParser {
   }
 
   public Optional<ParseResult> parse(String rawSpecJson) {
-    v3Parser.clearRemovedStringDefaults();
+    v3Parser.clearRemovedPropertyDefaults();
     for (SwaggerParserExtension extension : getParsers()) {
       var api = Optional.of(extension.readContents(rawSpecJson,
           Collections.emptyList(), swaggerOpts)).map(SwaggerParseResult::getOpenAPI);
       if (api.isPresent()) {
-        return api.map(a -> new ParseResult(a, rawSpecJson, v3Parser.removedStringDefaults()));
+        return api.map(a -> new ParseResult(a, rawSpecJson, v3Parser.removedPropertyDefaults()));
       }
     }
     return Optional.empty();
   }
 
-  public record ParseResult(OpenAPI api, String rawSpec, Map<String, Map<String, String>> stringDefaults) {}
+  public record ParseResult(OpenAPI api, String rawSpec, Map<String, Map<String, JsonNode>> propertyDefaults) {}
 
   private static ParseOptions defaultOpts() {
     ParseOptions options = new ParseOptions();

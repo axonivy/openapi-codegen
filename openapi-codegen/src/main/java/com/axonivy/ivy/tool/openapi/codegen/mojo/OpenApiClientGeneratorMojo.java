@@ -70,7 +70,7 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
     client.cleanup(getLog()::info);
     client.backupSpec(parsed.rawSpec());
 
-    var generator = new OpenApiCodegen(parsed.api(), parsed.stringDefaults());
+    var generator = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults());
     if (namespace != null) {
       generator.setPackage(namespace);
     }
