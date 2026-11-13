@@ -35,6 +35,10 @@ public class OpenApiSpecParser {
     this.v3Parser.doTypeCleanup(cleanup);
   }
 
+  public void doDefaultProcessing(boolean processing) {
+    this.v3Parser.doDefaultProcessing(processing);
+  }
+
   public OpenAPI parse(URI specUri) {
     for (SwaggerParserExtension extension : getParsers()) {
       var api = Optional.of(extension.readLocation(specUri.toString(),

@@ -64,6 +64,35 @@ class TestOpenApiClientGeneratorMojo {
   }
 
   @Test
+  void openApi31_defaultProcessing_canBeSkipped(@TempDir Path work) throws Exception {
+    var spec = work.resolve("openapi.json");
+    Files.writeString(spec, """
+        {
+          "openapi": "3.1.0",
+          "info": {"title": "Defaults", "version": "1"},
+          "paths": {},
+          "components": {
+            "schemas": {
+              "Defaults": {
+                "type": "object",
+                "properties": {"name": {"type": "string", "default": "sample"}}
+              }
+              }
+          }
+          }
+        """);
+    mojo.openApiSpec = spec.toString();
+    mojo.namespace = "com.test";
+    mojo.skipOpenApi31DefaultProcessing = true;
+    mojo.outputDir = work.resolve("generated");
+    mojo.execute();
+    var model = mojo.outputDir.resolve("com/test/Defaults.java");
+    assertThat(Files.readString(model))
+        .contains("name = sample;")
+        .doesNotContain("name = \"sample\";");
+  }
+
+  @Test
   void openApiSpec_asUri() throws Exception {
     URI uri = TstRes.petstoreUri();
     assertThat(uri.toString()).startsWith("file:");

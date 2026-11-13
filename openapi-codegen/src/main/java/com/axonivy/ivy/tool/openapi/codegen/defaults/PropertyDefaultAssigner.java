@@ -25,14 +25,20 @@ public class PropertyDefaultAssigner implements Filter {
 
   public PropertyDefaultAssigner(Map<String, Map<String, JsonNode>> propertyDefaults, JavaClientCodegen codegen) {
     Map<String, Map<String, JsonNode>> defaults = new LinkedHashMap<>();
-    propertyDefaults.forEach((schema, properties) ->
-        defaults.put(codegen.toModelName(schema) + ".java", properties));
+    propertyDefaults.forEach((schema, properties) -> {
+      if (!properties.isEmpty()) {
+        defaults.put(codegen.toModelName(schema) + ".java", properties);
+      }
+    });
     this.defaultsByModel = Map.copyOf(defaults);
     this.codegen = codegen;
   }
 
   @Override
   public String apply(String filename, String content) {
+    if (defaultsByModel.isEmpty()) {
+      return content;
+    }
     Map<String, JsonNode> defaults = defaultsByModel.get(new File(filename).getName());
     if (defaults == null) {
       return content;

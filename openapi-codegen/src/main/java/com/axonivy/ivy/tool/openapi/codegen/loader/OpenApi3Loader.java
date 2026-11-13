@@ -13,10 +13,13 @@ class OpenApi3Loader extends OpenAPIV3Parser {
   private final TypeHintCleaner typeHintCleaner = new TypeHintCleaner();
   private final PropertyDefaultCleaner propertyDefaultCleaner = new PropertyDefaultCleaner();
   private boolean doClean = true;
+  private boolean doDefaultProcessing = true;
 
   @Override
   public SwaggerParseResult parseJsonNode(String path, JsonNode node, ParseOptions options) {
-    propertyDefaultCleaner.clean(node);
+    if (doDefaultProcessing) {
+      propertyDefaultCleaner.clean(node);
+    }
     if (doClean) {
       typeHintCleaner.visitNode(node);
     }
@@ -33,6 +36,10 @@ class OpenApi3Loader extends OpenAPIV3Parser {
 
   public void doTypeCleanup(boolean cleanup) {
     this.doClean = cleanup;
+  }
+
+  public void doDefaultProcessing(boolean processing) {
+    this.doDefaultProcessing = processing;
   }
 
 }

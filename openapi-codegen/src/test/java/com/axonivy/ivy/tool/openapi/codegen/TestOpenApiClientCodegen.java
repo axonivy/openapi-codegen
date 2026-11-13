@@ -149,7 +149,7 @@ class TestOpenApiClientCodegen {
   }
 
   /**
-   * ISSUE SUPPORT-1779 Open API 3.1 defaults
+   * ISSUE XIVY-18770 Open API 3.1 defaults
    */
   @Test
   void openApi31_defaultInitializers(@TempDir Path client) throws IOException {

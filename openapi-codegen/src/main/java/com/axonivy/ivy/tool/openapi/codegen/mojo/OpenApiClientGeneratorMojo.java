@@ -41,6 +41,10 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
   @Parameter(property = "ivy.generate.openapi.client.skip", defaultValue = "false")
   boolean skipGenerate;
 
+  /** Skip the OpenAPI 3.1 default value processing. */
+  @Parameter(property = "ivy.generate.openapi.client.skipOpenApi31DefaultProcessing", defaultValue = "false")
+  boolean skipOpenApi31DefaultProcessing;
+
   /** URI or Path to an openapi.json or openapi.yaml */
   @Parameter(property = "ivy.generate.openapi.client.spec", required = true)
   String openApiSpec;
@@ -83,6 +87,7 @@ public class OpenApiClientGeneratorMojo extends AbstractMojo {
   private ParseResult parseOpenAPI() throws MojoExecutionException {
     try (var in = specResource(openApiSpec).openStream()) {
       var parser = new OpenApiSpecParser();
+      parser.doDefaultProcessing(!skipOpenApi31DefaultProcessing);
       if (resolveFully != null) {
         parser.swaggerOpts.setResolveFully(resolveFully);
       }
