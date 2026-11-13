@@ -155,7 +155,7 @@ class TestOpenApiClientCodegen {
       var openApi = parsed.api();
       assertThat(openApi.getOpenapi()).isEqualTo("3.1.0");
 
-      var generated = new OpenApiCodegen(openApi).generateSources(client.toFile());
+      var generated = new OpenApiCodegen(openApi, parsed.stringDefaults()).generateSources(client.toFile());
 
       assertThat(generated.stream()
           .map(file -> file.getName()))
@@ -164,8 +164,8 @@ class TestOpenApiClientCodegen {
         .filter(file -> file.getName().endsWith("ProcessingCompleted.java"))
         .findFirst().orElseThrow();
       assertThat(Files.readString(processingCompleted.toPath()))
-        .contains("workflowName = null;")
-        .doesNotContain("workflowName = TestWorkflow;");
+        .contains("workflowName = \"TestWorkflow\";")
+        .doesNotContain("workflowName = null;");
       
       compile(generated, client);
     }

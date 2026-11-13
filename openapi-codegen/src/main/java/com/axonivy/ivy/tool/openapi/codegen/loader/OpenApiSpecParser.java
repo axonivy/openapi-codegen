@@ -6,6 +6,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.swagger.v3.oas.models.OpenAPI;
@@ -49,17 +50,18 @@ public class OpenApiSpecParser {
   }
 
   public Optional<ParseResult> parse(String rawSpecJson) {
+    v3Parser.clearRemovedStringDefaults();
     for (SwaggerParserExtension extension : getParsers()) {
       var api = Optional.of(extension.readContents(rawSpecJson,
           Collections.emptyList(), swaggerOpts)).map(SwaggerParseResult::getOpenAPI);
       if (api.isPresent()) {
-        return api.map(a -> new ParseResult(a, rawSpecJson));
+        return api.map(a -> new ParseResult(a, rawSpecJson, v3Parser.removedStringDefaults()));
       }
     }
     return Optional.empty();
   }
 
-  public record ParseResult(OpenAPI api, String rawSpec) {}
+  public record ParseResult(OpenAPI api, String rawSpec, Map<String, Map<String, String>> stringDefaults) {}
 
   private static ParseOptions defaultOpts() {
     ParseOptions options = new ParseOptions();

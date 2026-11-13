@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.axonivy.ivy.tool.openapi.codegen.defaults.StringDefaultAssigner;
 import com.axonivy.ivy.tool.openapi.codegen.filter.FilteringGenerator;
 import com.axonivy.ivy.tool.openapi.codegen.filter.ProgressFilter;
 import com.axonivy.ivy.tool.openapi.codegen.filter.SchemaFilter;
@@ -25,10 +26,16 @@ import io.swagger.v3.oas.models.OpenAPI;
  */
 public class OpenApiCodegen {
   private final OpenAPI openApi;
+  private final Map<String, Map<String, String>> stringDefaults;
   private String modelPkg;
 
   public OpenApiCodegen(OpenAPI openApi) {
+    this(openApi, Map.of());
+  }
+
+  public OpenApiCodegen(OpenAPI openApi, Map<String, Map<String, String>> stringDefaults) {
     this.openApi = openApi;
+    this.stringDefaults = stringDefaults;
     this.modelPkg = "com.axonivy.client";
   }
 
@@ -48,6 +55,8 @@ public class OpenApiCodegen {
     input.getConfig().setOutputDir(outDir.getAbsolutePath());
     return modelsOnly(() -> new FilteringGenerator()
         .filter(new SchemaFilter())
+        .filter(new StringDefaultAssigner(stringDefaults,
+            (io.swagger.codegen.v3.generators.java.JavaClientCodegen) input.getConfig()))
         .filter(new ProgressFilter(openApi))
         .opts(input).generate());
   }

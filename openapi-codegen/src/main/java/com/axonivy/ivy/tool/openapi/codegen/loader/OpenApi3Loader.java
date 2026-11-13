@@ -1,5 +1,8 @@
 package com.axonivy.ivy.tool.openapi.codegen.loader;
 
+import java.util.Map;
+
+import com.axonivy.ivy.tool.openapi.codegen.defaults.StringDefaultCleaner;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.swagger.v3.parser.OpenAPIV3Parser;
@@ -18,6 +21,14 @@ class OpenApi3Loader extends OpenAPIV3Parser {
       typeHintCleaner.visitNode(node);
     }
     return super.parseJsonNode(path, node, options);
+  }
+
+  Map<String, Map<String, String>> removedStringDefaults() {
+    return stringDefaultCleaner.removedDefaults();
+  }
+
+  void clearRemovedStringDefaults() {
+    stringDefaultCleaner.clear();
   }
 
   public void doTypeCleanup(boolean cleanup) {
