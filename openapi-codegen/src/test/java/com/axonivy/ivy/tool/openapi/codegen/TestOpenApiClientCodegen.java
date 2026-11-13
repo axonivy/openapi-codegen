@@ -161,8 +161,8 @@ class TestOpenApiClientCodegen {
       var generated = new OpenApiCodegen(openApi, parsed.propertyDefaults()).generateSources(client.toFile());
 
       var processingCompleted = generated.stream()
-        .filter(file -> file.getName().endsWith("ProcessingCompleted.java"))
-        .findFirst().orElseThrow();
+          .filter(file -> file.getName().endsWith("ProcessingCompleted.java"))
+          .findFirst().orElseThrow();
       assertThat(Files.readString(processingCompleted.toPath()))
           .contains("workflowName = \"TestWorkflow\";")
           .doesNotContain("workflowName = null;");
@@ -172,46 +172,46 @@ class TestOpenApiClientCodegen {
   @Test
   void openApi31_defaults_allTypes(@TempDir Path client) throws IOException {
     var spec = """
-        {
-          "openapi": "3.1.0",
-          "info": {"title": "Defaults", "version": "1"},
-          "paths": {},
-          "components": {
-            "schemas": {
-              "DefaultValues": {
-                "type": "object",
-                "properties": {
-                  "label": {"type": "string", "default": "sample"},
-                  "count": {"type": "integer", "default": 3},
-                  "ratio": {"type": "number", "default": 0.5},
-                  "enabled": {"type": "boolean", "default": false},
-                  "state": {"type": "string", "enum": ["ready", "done"], "default": "ready"},
-                  "created": {"type": "string", "format": "date", "default": "2024-01-02"},
-                  "occurredAt": {"type": "string", "format": "date-time", "default": "2024-01-02T03:04:05Z"},
-                  "identifier": {"type": "string", "format": "uuid", "default": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"},
-                  "labels": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "default": ["one", "two"]
-                  },
-                  "metadata": {
-                    "type": "object",
-                    "default": {"source": "sample", "count": 2, "optional": null}
-                  },
-                  "optional": {"type": ["string", "null"], "default": null}
-                }
+      {
+        "openapi": "3.1.0",
+        "info": {"title": "Defaults", "version": "1"},
+        "paths": {},
+        "components": {
+          "schemas": {
+            "DefaultValues": {
+              "type": "object",
+              "properties": {
+                "label": {"type": "string", "default": "sample"},
+                "count": {"type": "integer", "default": 3},
+                "ratio": {"type": "number", "default": 0.5},
+                "enabled": {"type": "boolean", "default": false},
+                "state": {"type": "string", "enum": ["ready", "done"], "default": "ready"},
+                "created": {"type": "string", "format": "date", "default": "2024-01-02"},
+                "occurredAt": {"type": "string", "format": "date-time", "default": "2024-01-02T03:04:05Z"},
+                "identifier": {"type": "string", "format": "uuid", "default": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"},
+                "labels": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "default": ["one", "two"]
+                },
+                "metadata": {
+                  "type": "object",
+                  "default": {"source": "sample", "count": 2, "optional": null}
+                },
+                "optional": {"type": ["string", "null"], "default": null}
               }
             }
           }
         }
-        """;
+      }
+      """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
-    assertThat(parsed.propertyDefaults().get("DefaultValues").keySet())
-        .contains("label", "count", "ratio", "enabled", "labels", "metadata", "optional");
+    assertThat(parsed.propertyDefaults().get("DefaultValues"))
+        .containsKeys("label", "count", "ratio", "enabled", "labels", "metadata", "optional");
 
     var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
     var source = Files.readString(generated.stream()
-        .filter(file -> file.getName().equals("DefaultValues.java"))
+        .filter(file -> "DefaultValues.java".equals(file.getName()))
         .findFirst().orElseThrow().toPath());
     assertThat(source)
         .contains("label = \"sample\";")
@@ -233,43 +233,43 @@ class TestOpenApiClientCodegen {
   @Test
   void openApi31_defaults_inNestedAndComposedSchemas(@TempDir Path client) throws IOException {
     var spec = """
-        {
-          "openapi": "3.1.0",
-          "info": {"title": "Nested defaults", "version": "1"},
-          "paths": {},
-          "components": {
-            "schemas": {
-              "Parent": {
-                "type": "object",
-                "properties": {
-                  "child": {
-                    "type": "object",
-                    "properties": {
-                      "nestedName": {"type": "string", "default": "nested"}
-                    }
+      {
+        "openapi": "3.1.0",
+        "info": {"title": "Nested defaults", "version": "1"},
+        "paths": {},
+        "components": {
+          "schemas": {
+            "Parent": {
+              "type": "object",
+              "properties": {
+                "child": {
+                  "type": "object",
+                  "properties": {
+                    "nestedName": {"type": "string", "default": "nested"}
                   }
                 }
-              },
-              "AllOfParent": {
-                "allOf": [
-                  {"type": "object", "properties": {"baseName": {"type": "string"}}},
-                  {"type": "object", "properties": {
-                    "allOfName": {"type": "string", "default": "allOf"}
-                  }}
-                ]
-              },
-              "AnyOfParent": {
-                "anyOf": [
-                  {"type": "object", "properties": {
-                    "anyOfName": {"type": "string", "default": "anyOf"}
-                  }},
-                  {"type": "object", "properties": {"otherName": {"type": "string"}}}
-                ]
               }
+            },
+            "AllOfParent": {
+              "allOf": [
+                {"type": "object", "properties": {"baseName": {"type": "string"}}},
+                {"type": "object", "properties": {
+                  "allOfName": {"type": "string", "default": "allOf"}
+                }}
+              ]
+            },
+            "AnyOfParent": {
+              "anyOf": [
+                {"type": "object", "properties": {
+                  "anyOfName": {"type": "string", "default": "anyOf"}
+                }},
+                {"type": "object", "properties": {"otherName": {"type": "string"}}}
+              ]
             }
           }
         }
-        """;
+      }
+      """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
 
     assertThat(parsed.propertyDefaults().values().stream()
@@ -277,16 +277,16 @@ class TestOpenApiClientCodegen {
         .map(value -> java.util.Objects.requireNonNull(value).asText())
         .toList()).contains("nested", "allOf", "anyOf");
     assertThat(parsed.propertyDefaults().get("Parent_child"))
-      .containsEntry("nestedName", TextNode.valueOf("nested"));
+        .containsEntry("nestedName", TextNode.valueOf("nested"));
     assertThat(parsed.propertyDefaults().get("AllOfParent"))
-      .containsEntry("allOfName", TextNode.valueOf("allOf"));
+        .containsEntry("allOfName", TextNode.valueOf("allOf"));
     assertThat(parsed.propertyDefaults().get("AnyOfParent"))
-      .containsEntry("anyOfName", TextNode.valueOf("anyOf"));
+        .containsEntry("anyOfName", TextNode.valueOf("anyOf"));
 
     var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
     assertThat(generated.stream().map(file -> java.util.Objects.requireNonNull(file).getName()).toList())
-      .contains("ParentChild.java", "AllOfParent.java", "AnyOfParent.java");
-    var childModel = generated.stream().filter(file -> file.getName().equals("ParentChild.java")).findFirst().orElseThrow();
+        .contains("ParentChild.java", "AllOfParent.java", "AnyOfParent.java");
+    var childModel = generated.stream().filter(file -> "ParentChild.java".equals(file.getName())).findFirst().orElseThrow();
     var childSource = Files.readString(childModel.toPath());
     assertThat(childSource).contains("nestedName = \"nested\";");
     compile(generated, client);
@@ -295,24 +295,24 @@ class TestOpenApiClientCodegen {
   @Test
   void textualDefaults_restoreEnumsAndFormattedTypes() {
     var generatedModel = """
-        public class TypedDefaults {
-          public enum StatusEnum {
-            READY("ready");
-            private final String value;
-            StatusEnum(String value) { this.value = value; }
-            public static StatusEnum fromValue(String input) {
-              return READY;
-            }
+      public class TypedDefaults {
+        public enum StatusEnum {
+          READY("ready");
+          private final String value;
+          StatusEnum(String value) { this.value = value; }
+          public static StatusEnum fromValue(String input) {
+            return READY;
           }
-          private StatusEnum state = null;
-          private java.time.LocalDate created = null;
-          private java.time.OffsetDateTime occurredAt = null;
-          private java.util.UUID identifier = null;
-          private java.io.File path = null;
-          private java.util.List<java.io.File> paths = null;
-          private java.util.Map<String, java.io.File> metadata = null;
         }
-        """;
+        private StatusEnum state = null;
+        private java.time.LocalDate created = null;
+        private java.time.OffsetDateTime occurredAt = null;
+        private java.util.UUID identifier = null;
+        private java.io.File path = null;
+        private java.util.List<java.io.File> paths = null;
+        private java.util.Map<String, java.io.File> metadata = null;
+      }
+      """;
     Map<String, Map<String, JsonNode>> defaults = Map.of("TypedDefaults", Map.of(
         "state", TextNode.valueOf("ready"),
         "created", TextNode.valueOf("2024-01-02"),
@@ -338,35 +338,34 @@ class TestOpenApiClientCodegen {
   @Test
   void openApi31_defaults_inInlineRequestAndResponse(@TempDir Path client) throws IOException {
     var spec = """
-        {
-          "openapi": "3.1.0",
-          "info": {"title": "Inline defaults", "version": "1"},
-          "paths": {
-            "/widgets": {
-              "post": {
-                "operationId": "createWidget",
-                "requestBody": {
+      {
+        "openapi": "3.1.0",
+        "info": {"title": "Inline defaults", "version": "1"},
+        "paths": {
+          "/widgets": {
+            "post": {
+              "operationId": "createWidget",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "label": {"type": "string", "default": "inline"}
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Created",
                   "content": {
                     "application/json": {
                       "schema": {
                         "type": "object",
                         "properties": {
-                          "label": {"type": "string", "default": "inline"}
-                        }
-                      }
-                    }
-                  }
-                },
-                "responses": {
-                  "200": {
-                    "description": "Created",
-                    "content": {
-                      "application/json": {
-                        "schema": {
-                          "type": "object",
-                          "properties": {
-                            "status": {"type": "string", "default": "ready"}
-                          }
+                          "status": {"type": "string", "default": "ready"}
                         }
                       }
                     }
@@ -376,17 +375,18 @@ class TestOpenApiClientCodegen {
             }
           }
         }
-        """;
+      }
+      """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
     assertThat(parsed.propertyDefaults().values().stream()
         .map(properties -> properties.get("label"))
         .filter(java.util.Objects::nonNull)
-        .map(value -> value.asText())
+        .map(JsonNode::asText)
         .toList()).containsExactly("inline");
     assertThat(parsed.propertyDefaults().values().stream()
         .map(properties -> properties.get("status"))
         .filter(java.util.Objects::nonNull)
-        .map(value -> value.asText())
+        .map(JsonNode::asText)
         .toList()).containsExactly("ready");
     var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
     var modelSources = generated.stream()
@@ -406,8 +406,9 @@ class TestOpenApiClientCodegen {
           }
         })
         .toList();
-    assertThat(modelSources).anySatisfy(source -> assertThat(source).contains("label = \"inline\";"));
-    assertThat(modelSources).anySatisfy(source -> assertThat(source).contains("status = \"ready\";"));
+    assertThat(modelSources)
+        .anySatisfy(source -> assertThat(source).contains("label = \"inline\";"))
+        .anySatisfy(source -> assertThat(source).contains("status = \"ready\";"));
     compile(generated, client);
   }
 
