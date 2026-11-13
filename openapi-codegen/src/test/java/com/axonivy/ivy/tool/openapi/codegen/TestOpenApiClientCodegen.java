@@ -18,7 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.yaml.snakeyaml.LoaderOptions;
 
+import com.axonivy.ivy.tool.openapi.codegen.defaults.PropertyDefaultAssigner;
 import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -181,6 +185,10 @@ class TestOpenApiClientCodegen {
                   "count": {"type": "integer", "default": 3},
                   "ratio": {"type": "number", "default": 0.5},
                   "enabled": {"type": "boolean", "default": false},
+                  "state": {"type": "string", "enum": ["ready", "done"], "default": "ready"},
+                  "created": {"type": "string", "format": "date", "default": "2024-01-02"},
+                  "occurredAt": {"type": "string", "format": "date-time", "default": "2024-01-02T03:04:05Z"},
+                  "identifier": {"type": "string", "format": "uuid", "default": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"},
                   "labels": {
                     "type": "array",
                     "items": {"type": "string"},
@@ -210,11 +218,134 @@ class TestOpenApiClientCodegen {
         .contains("count = Integer.valueOf(\"3\");")
         .contains("ratio = Double.valueOf(\"0.5\");")
         .contains("enabled = false;")
+        .contains("state = \"ready\";")
+        .contains("created = \"2024-01-02\";")
+        .contains("occurredAt = \"2024-01-02T03:04:05Z\";")
+        .contains("identifier = \"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\";")
         .contains("labels = java.util.Arrays.asList(\"one\", \"two\");")
         .contains("metadata = new java.util.LinkedHashMap<String, Object>() {{")
         .contains("put(\"count\", Integer.valueOf(\"2\"));")
         .contains("put(\"optional\", null);")
         .contains("optional = null;");
+    compile(generated, client);
+  }
+
+  @Test
+  void textualDefaults_restoreEnumsAndFormattedTypes() {
+    var generatedModel = """
+        public class TypedDefaults {
+          public enum StatusEnum {
+            READY("ready");
+            private final String value;
+            StatusEnum(String value) { this.value = value; }
+            public static StatusEnum fromValue(String input) {
+              return READY;
+            }
+          }
+          private StatusEnum state = null;
+          private java.time.LocalDate created = null;
+          private java.time.OffsetDateTime occurredAt = null;
+          private java.util.UUID identifier = null;
+          private java.io.File path = null;
+          private java.util.List<java.io.File> paths = null;
+          private java.util.Map<String, java.io.File> metadata = null;
+        }
+        """;
+    Map<String, Map<String, JsonNode>> defaults = Map.of("TypedDefaults", Map.of(
+        "state", TextNode.valueOf("ready"),
+        "created", TextNode.valueOf("2024-01-02"),
+        "occurredAt", TextNode.valueOf("2024-01-02T03:04:05Z"),
+        "identifier", TextNode.valueOf("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"),
+        "path", TextNode.valueOf("/tmp/default"),
+        "paths", JsonNodeFactory.instance.arrayNode().add("/tmp/default"),
+        "metadata", JsonNodeFactory.instance.objectNode().put("path", "/tmp/default")));
+
+    var assigner = new PropertyDefaultAssigner(defaults, new io.swagger.codegen.v3.generators.java.JavaClientCodegen());
+    var restored = assigner.apply("TypedDefaults.java", generatedModel);
+
+    assertThat(restored)
+        .contains("state = StatusEnum.fromValue(\"ready\");")
+        .contains("created = java.time.LocalDate.parse(\"2024-01-02\");")
+        .contains("occurredAt = java.time.OffsetDateTime.parse(\"2024-01-02T03:04:05Z\");")
+        .contains("identifier = java.util.UUID.fromString(\"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\");")
+        .contains("path = null;")
+        .contains("paths = null;")
+        .contains("metadata = null;");
+  }
+
+  @Test
+  void openApi31_defaults_inInlineRequestAndResponse(@TempDir Path client) throws IOException {
+    var spec = """
+        {
+          "openapi": "3.1.0",
+          "info": {"title": "Inline defaults", "version": "1"},
+          "paths": {
+            "/widgets": {
+              "post": {
+                "operationId": "createWidget",
+                "requestBody": {
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "label": {"type": "string", "default": "inline"}
+                        }
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "Created",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "type": "object",
+                          "properties": {
+                            "status": {"type": "string", "default": "ready"}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        """;
+    var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
+    assertThat(parsed.propertyDefaults().values().stream()
+        .map(properties -> properties.get("label"))
+        .filter(java.util.Objects::nonNull)
+        .map(value -> value.asText())
+        .toList()).containsExactly("inline");
+    assertThat(parsed.propertyDefaults().values().stream()
+        .map(properties -> properties.get("status"))
+        .filter(java.util.Objects::nonNull)
+        .map(value -> value.asText())
+        .toList()).containsExactly("ready");
+    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    var modelSources = generated.stream()
+        .filter(file -> {
+          try {
+            String source = Files.readString(file.toPath());
+            return source.contains("label = \"inline\";") || source.contains("status = \"ready\";");
+          } catch (IOException exception) {
+            throw new java.io.UncheckedIOException(exception);
+          }
+        })
+        .map(file -> {
+          try {
+            return Files.readString(file.toPath());
+          } catch (IOException exception) {
+            throw new java.io.UncheckedIOException(exception);
+          }
+        })
+        .toList();
+    assertThat(modelSources).anySatisfy(source -> assertThat(source).contains("label = \"inline\";"));
+    assertThat(modelSources).anySatisfy(source -> assertThat(source).contains("status = \"ready\";"));
     compile(generated, client);
   }
 

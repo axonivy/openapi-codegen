@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.codegen.v3.generators.java.JavaClientCodegen;
 
 /**
- * Restores component property defaults as Java field initializers.
+ * Restores model property defaults as Java field initializers.
  */
 public class PropertyDefaultAssigner implements Filter {
   private final Map<String, Map<String, JsonNode>> defaultsByModel;
@@ -45,10 +45,9 @@ public class PropertyDefaultAssigner implements Filter {
       if (!matcher.find()) {
         continue;
       }
-      String javaValue = javaLiteral(property.getValue(), matcher.group(2).trim());
+      String javaValue = javaLiteral(property.getValue(), matcher.group(2).trim(), content);
       if (javaValue == null) {
-        throw new IllegalStateException("Cannot restore default for " + filename + "." + property.getKey()
-            + " as generated type " + matcher.group(2).trim());
+        continue;
       }
       String replacement = matcher.group(1) + javaValue + ";";
       content = matcher.replaceFirst(Matcher.quoteReplacement(replacement));
@@ -56,13 +55,26 @@ public class PropertyDefaultAssigner implements Filter {
     return content;
   }
 
-  private static String javaLiteral(JsonNode value, String fieldType) {
+  private static String javaLiteral(JsonNode value, String fieldType, String generatedSource) {
     String rawType = rawType(fieldType);
     if (value.isNull()) {
       return isPrimitive(rawType) ? null : "null";
     }
     if (value.isTextual()) {
-      return isType(rawType, "String", "Object") ? javaStringLiteral(value.asText()) : null;
+      String stringValue = javaStringLiteral(value.asText());
+      if (isType(rawType, "String", "Object")) {
+        return stringValue;
+      }
+      if (hasEnumFromValue(rawType, generatedSource)) {
+        return rawType + ".fromValue(" + stringValue + ")";
+      }
+      return switch (simpleType(rawType)) {
+        case "LocalDate", "LocalDateTime", "OffsetDateTime", "ZonedDateTime", "LocalTime", "OffsetTime",
+            "Instant", "Duration", "Year", "YearMonth" -> rawType + ".parse(" + stringValue + ")";
+        case "UUID" -> rawType + ".fromString(" + stringValue + ")";
+        case "URI" -> rawType + ".create(" + stringValue + ")";
+        default -> null;
+      };
     }
     if (value.isBoolean()) {
       return isType(rawType, "boolean", "Boolean", "Object") ? value.asText() : null;
@@ -71,12 +83,20 @@ public class PropertyDefaultAssigner implements Filter {
       return javaNumber(value, rawType);
     }
     if (value.isArray()) {
-      return javaArray(value, fieldType, rawType);
+      return javaArray(value, fieldType, rawType, generatedSource);
     }
     if (value.isObject()) {
-      return javaObject(value, fieldType, rawType);
+      return javaObject(value, fieldType, rawType, generatedSource);
     }
     return null;
+  }
+
+  private static boolean hasEnumFromValue(String rawType, String generatedSource) {
+    String enumName = simpleType(rawType);
+    String declaration = "\\benum\\s+" + Pattern.quote(enumName) + "\\s*\\{";
+    String converter = "\\bstatic\\s+" + Pattern.quote(enumName) + "\\s+fromValue\\s*\\(\\s*String\\b";
+    return Pattern.compile(declaration).matcher(generatedSource).find()
+        && Pattern.compile(converter).matcher(generatedSource).find();
   }
 
   private static String javaNumber(JsonNode value, String rawType) {
@@ -122,16 +142,20 @@ public class PropertyDefaultAssigner implements Filter {
     return "Double.valueOf(" + number + ")";
   }
 
-  private static String javaArray(JsonNode value, String fieldType, String rawType) {
+  private static String javaArray(JsonNode value, String fieldType, String rawType, String generatedSource) {
     if (rawType.endsWith("[]")) {
       String elementType = rawType.substring(0, rawType.length() - 2);
-      return "new " + elementType + "[] {" + joinValues(value, elementType) + "}";
+      String values = joinValues(value, elementType, generatedSource);
+      return values == null ? null : "new " + elementType + "[] {" + values + "}";
     }
     if (!isType(rawType, "Object", "List", "Collection", "Iterable", "Set")) {
       return null;
     }
     String elementType = typeArguments(fieldType).stream().findFirst().orElse("Object");
-    String values = joinValues(value, elementType);
+    String values = joinValues(value, elementType, generatedSource);
+    if (values == null) {
+      return null;
+    }
     if (value.isEmpty()) {
       return isType(rawType, "Set") ? "java.util.Collections.emptySet()" : "java.util.Collections.emptyList()";
     }
@@ -141,19 +165,19 @@ public class PropertyDefaultAssigner implements Filter {
     return "java.util.Arrays.asList(" + values + ")";
   }
 
-  private static String joinValues(JsonNode array, String elementType) {
+  private static String joinValues(JsonNode array, String elementType, String generatedSource) {
     List<String> values = new ArrayList<>();
-    array.forEach(value -> {
-      String literal = javaLiteral(value, elementType);
+    for (JsonNode item : array) {
+      String literal = javaLiteral(item, elementType, generatedSource);
       if (literal == null) {
-        throw new IllegalStateException("Unsupported array default value for generated type " + elementType);
+        return null;
       }
       values.add(literal);
-    });
+    }
     return values.stream().collect(Collectors.joining(", "));
   }
 
-  private static String javaObject(JsonNode value, String fieldType, String rawType) {
+  private static String javaObject(JsonNode value, String fieldType, String rawType, String generatedSource) {
     if (!isType(rawType, "Object", "Map", "HashMap", "LinkedHashMap")) {
       return null;
     }
@@ -162,15 +186,17 @@ public class PropertyDefaultAssigner implements Filter {
     String valueType = arguments.size() > 1 ? arguments.get(1) : "Object";
     StringBuilder initializer = new StringBuilder("new java.util.LinkedHashMap")
         .append(typeArguments).append("() {{ ");
-    ((ObjectNode) value).propertyStream().forEach(entry -> {
-      String literal = javaLiteral(entry.getValue(), valueType);
+    var entries = ((ObjectNode) value).propertyStream().iterator();
+    while (entries.hasNext()) {
+      var entry = entries.next();
+      String literal = javaLiteral(entry.getValue(), valueType, generatedSource);
       if (literal == null) {
-        throw new IllegalStateException("Unsupported object default value for generated type " + valueType);
+        return null;
       }
       initializer.append("put(")
           .append(javaStringLiteral(entry.getKey()))
           .append(", ").append(literal).append("); ");
-    });
+    }
     if (value.isEmpty()) {
       return new StringBuilder("new java.util.LinkedHashMap").append(typeArguments).append("()").toString();
     }
