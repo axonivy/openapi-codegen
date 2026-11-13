@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.media.Schema;
 
 class TestOpenApiSpecParser {
 
@@ -54,6 +55,29 @@ class TestOpenApiSpecParser {
             "user_createWithArray_body",
             "user_username_body",
             "user_body");
+  }
+
+  @Test
+  void openApi30StringDefaultsRemainUntouched() {
+    var spec = """
+        openapi: 3.0.3
+        info:
+          title: Default preservation
+          version: 1.0.0
+        paths: {}
+        components:
+          schemas:
+            Example:
+              type: object
+              properties:
+                name:
+                  type: string
+                  default: Standard
+        """;
+    var openApi = new OpenApiSpecParser().parse(spec).orElseThrow().api();
+    var name = (Schema<?>) openApi.getComponents().getSchemas().get("Example").getProperties().get("name");
+
+    Assertions.assertThat(name.getDefault()).isEqualTo("Standard");
   }
 
   private Set<String> modelsOf(OpenAPI openApi) {
