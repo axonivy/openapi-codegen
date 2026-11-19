@@ -17,6 +17,7 @@ class OpenApi3Loader extends OpenAPIV3Parser {
 
   @Override
   public SwaggerParseResult parseJsonNode(String path, JsonNode node, ParseOptions options) {
+    OpenApi31CompatibilityNormalizer.normalizeTo30(node);
     if (doDefaultProcessing) {
       propertyDefaultCleaner.clean(node);
     }
