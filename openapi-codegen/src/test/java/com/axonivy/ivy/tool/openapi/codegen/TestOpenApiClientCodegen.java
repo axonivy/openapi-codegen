@@ -216,18 +216,84 @@ class TestOpenApiClientCodegen {
     assertThat(source)
         .contains("label = \"sample\";")
         .contains("count = Integer.valueOf(\"3\");")
-        .contains("ratio = Double.valueOf(\"0.5\");")
+        .contains("ratio = new java.math.BigDecimal(\"0.5\");")
         .contains("enabled = false;")
-        .contains("state = \"ready\";")
-        .contains("created = \"2024-01-02\";")
-        .contains("occurredAt = \"2024-01-02T03:04:05Z\";")
-        .contains("identifier = \"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\";")
+        .contains("state = StateEnum.fromValue(\"ready\");")
+        .contains("created = LocalDate.parse(\"2024-01-02\");")
+        .contains("occurredAt = OffsetDateTime.parse(\"2024-01-02T03:04:05Z\");")
+        .contains("identifier = UUID.fromString(\"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\");")
         .contains("labels = java.util.Arrays.asList(\"one\", \"two\");")
         .contains("metadata = new java.util.LinkedHashMap<String, Object>() {{")
         .contains("put(\"count\", Integer.valueOf(\"2\"));")
         .contains("put(\"optional\", null);")
         .contains("optional = null;");
     compile(generated, client);
+  }
+
+  @Test
+  void openApi31_stringPropertiesNormalizeForCodegen(@TempDir Path client) throws IOException {
+    var spec = """
+        {
+          "openapi": "3.1.0",
+          "info": {"title": "String types", "version": "1"},
+          "paths": {},
+          "components": {
+            "schemas": {
+              "StringTypes": {
+                "type": "object",
+                "properties": {
+                  "plainText": {"type": "string"},
+                  "uuidText": {"type": "string", "format": "uuid"},
+                  "nullableText": {"type": ["string", "null"]}
+                }
+              }
+            }
+          }
+        }
+        """;
+    var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
+        var schemas = parsed.api().getComponents().getSchemas();
+        assertThat(schemas).containsKey("StringTypes");
+        var properties = schemas.get("StringTypes").getProperties();
+    var plainText = (Schema<?>) properties.get("plainText");
+    var uuidText = (Schema<?>) properties.get("uuidText");
+    var nullableText = (Schema<?>) properties.get("nullableText");
+
+    assertThat(parsed.api().getOpenapi()).isEqualTo("3.1.0");
+    assertThat(plainText.getTypes()).contains("string");
+    assertThat(plainText.getType()).isEqualTo("string");
+    assertThat(uuidText.getType()).isEqualTo("string");
+    assertThat(uuidText.getFormat()).isEqualTo("uuid");
+    assertThat(nullableText.getType()).isEqualTo("string");
+    assertThat(nullableText.getNullable()).isTrue();
+
+    var codegen31 = new io.swagger.codegen.v3.generators.java.JavaClientCodegen();
+    var model31 = codegen31.fromModel("StringTypes", parsed.api().getComponents().getSchemas().get("StringTypes"));
+    assertThat(model31.vars.stream().filter(property -> "plainText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("String");
+    assertThat(model31.vars.stream().filter(property -> "uuidText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("UUID");
+
+    var openApi30Spec = spec.replace("[\"string\", \"null\"]", "\"string\", \"nullable\": true")
+      .replace("3.1.0", "3.0.3");
+    var openApi30 = new OpenApiSpecParser().parse(openApi30Spec).orElseThrow();
+    var model30 = new io.swagger.codegen.v3.generators.java.JavaClientCodegen().fromModel(
+      "StringTypes", openApi30.api().getComponents().getSchemas().get("StringTypes"));
+    assertThat(model30.vars.stream().filter(property -> "plainText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("String");
+    assertThat(model30.vars.stream().filter(property -> "uuidText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("UUID");
+    var generated30 = new OpenApiCodegen(openApi30.api()).generateSources(client.resolve("oas30").toFile());
+    var source30 = Files.readString(generated30.stream()
+        .filter(file -> "StringTypes.java".equals(file.getName()))
+        .findFirst().orElseThrow().toPath());
+    assertThat(source30).contains("private String plainText = null;", "private UUID uuidText = null;");
+
+    var generated31 = new OpenApiCodegen(parsed.api()).generateSources(client.resolve("oas31").toFile());
+    var source31 = Files.readString(generated31.stream()
+      .filter(file -> "StringTypes.java".equals(file.getName()))
+      .findFirst().orElseThrow().toPath());
+    assertThat(source31).contains("private String plainText = null;", "private UUID uuidText = null;");
   }
 
   @Test
@@ -271,6 +337,12 @@ class TestOpenApiClientCodegen {
       }
       """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
+
+    var allOfParent = parsed.api().getComponents().getSchemas().get("AllOfParent");
+    var firstAllOfSchema = (Schema<?>) allOfParent.getAllOf().get(0);
+    var allOfBaseName = (Schema<?>) firstAllOfSchema.getProperties().get("baseName");
+    assertThat(allOfBaseName.getTypes()).contains("string");
+    assertThat(allOfBaseName.getType()).isEqualTo("string");
 
     assertThat(parsed.propertyDefaults().values().stream()
         .flatMap(properties -> properties.values().stream())

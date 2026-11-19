@@ -15,7 +15,6 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.extensions.SwaggerParserExtension;
 import io.swagger.v3.parser.core.models.ParseOptions;
-import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import io.swagger.v3.parser.util.DeserializationUtils;
 import io.swagger.v3.parser.util.DeserializationUtils.Options;
 
@@ -40,11 +39,16 @@ public class OpenApiSpecParser {
   }
 
   public OpenAPI parse(URI specUri) {
+    v3Parser.clearOriginalOpenApiVersion();
     for (SwaggerParserExtension extension : getParsers()) {
-      var api = Optional.of(extension.readLocation(specUri.toString(),
-          Collections.emptyList(), swaggerOpts)).map(SwaggerParseResult::getOpenAPI);
-      if (api.isPresent()) {
-        return api.get();
+      var result = extension.readLocation(specUri.toString(), Collections.emptyList(), swaggerOpts);
+      OpenAPI api = result.getOpenAPI();
+      if (api != null) {
+        if (extension == v3Parser) {
+          v3Parser.restoreOriginalOpenApiVersion(api);
+        }
+        SchemaTypeNormalizer.normalize(api);
+        return api;
       }
     }
     return null;
@@ -57,11 +61,16 @@ public class OpenApiSpecParser {
 
   public Optional<ParseResult> parse(String rawSpecJson) {
     v3Parser.clearRemovedPropertyDefaults();
+    v3Parser.clearOriginalOpenApiVersion();
     for (SwaggerParserExtension extension : getParsers()) {
-      var api = Optional.of(extension.readContents(rawSpecJson,
-          Collections.emptyList(), swaggerOpts)).map(SwaggerParseResult::getOpenAPI);
-      if (api.isPresent()) {
-        return api.map(a -> new ParseResult(a, rawSpecJson, v3Parser.removedPropertyDefaults()));
+      var result = extension.readContents(rawSpecJson, Collections.emptyList(), swaggerOpts);
+      OpenAPI api = result.getOpenAPI();
+      if (api != null) {
+        if (extension == v3Parser) {
+          v3Parser.restoreOriginalOpenApiVersion(api);
+        }
+        SchemaTypeNormalizer.normalize(api);
+        return Optional.of(new ParseResult(api, rawSpecJson, v3Parser.removedPropertyDefaults()));
       }
     }
     return Optional.empty();
