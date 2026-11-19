@@ -231,6 +231,60 @@ class TestOpenApiClientCodegen {
   }
 
   @Test
+  void openApi31_stringTypesBecomeObjectInCodegen_evenWithoutUuidFormat(@TempDir Path client) throws IOException {
+    var spec = """
+        {
+          "openapi": "3.1.0",
+          "info": {"title": "String types", "version": "1"},
+          "paths": {},
+          "components": {
+            "schemas": {
+              "StringTypes": {
+                "type": "object",
+                "properties": {
+                  "plainText": {"type": "string"},
+                  "uuidText": {"type": "string", "format": "uuid"}
+                }
+              }
+            }
+          }
+        }
+        """;
+    var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
+    var properties = parsed.api().getComponents().getSchemas().get("StringTypes").getProperties();
+    var plainText = (Schema<?>) properties.get("plainText");
+    var uuidText = (Schema<?>) properties.get("uuidText");
+
+    assertThat(plainText.getTypes()).contains("string");
+    assertThat(uuidText.getTypes()).contains("string");
+    assertThat(uuidText.getFormat()).isEqualTo("uuid");
+
+    var codegen31 = new io.swagger.codegen.v3.generators.java.JavaClientCodegen();
+    var model31 = codegen31.fromModel("StringTypes", parsed.api().getComponents().getSchemas().get("StringTypes"));
+    assertThat(model31.vars.stream().filter(property -> "plainText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("Object");
+    assertThat(model31.vars.stream().filter(property -> "uuidText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("Object");
+
+    var openApi30 = new OpenApiSpecParser().parse(spec.replace("3.1.0", "3.0.3")).orElseThrow();
+    var model30 = new io.swagger.codegen.v3.generators.java.JavaClientCodegen().fromModel(
+      "StringTypes", openApi30.api().getComponents().getSchemas().get("StringTypes"));
+    assertThat(model30.vars.stream().filter(property -> "plainText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("String");
+    var generated30 = new OpenApiCodegen(openApi30.api()).generateSources(client.resolve("oas30").toFile());
+    var source30 = Files.readString(generated30.stream()
+        .filter(file -> "StringTypes.java".equals(file.getName()))
+        .findFirst().orElseThrow().toPath());
+    assertThat(source30).contains("private String plainText = null;");
+
+    var generated31 = new OpenApiCodegen(parsed.api()).generateSources(client.resolve("oas31").toFile());
+    var source31 = Files.readString(generated31.stream()
+      .filter(file -> "StringTypes.java".equals(file.getName()))
+      .findFirst().orElseThrow().toPath());
+    assertThat(source31).contains("private Object plainText = null;", "private Object uuidText = null;");
+  }
+
+  @Test
   void openApi31_defaults_inNestedAndComposedSchemas(@TempDir Path client) throws IOException {
     var spec = """
       {
