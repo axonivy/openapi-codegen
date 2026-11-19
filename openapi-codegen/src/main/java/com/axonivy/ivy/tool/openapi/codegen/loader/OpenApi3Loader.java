@@ -23,7 +23,8 @@ class OpenApi3Loader extends OpenAPIV3Parser {
     if (doClean) {
       typeHintCleaner.visitNode(node);
     }
-    return super.parseJsonNode(path, node, options);
+    SwaggerParseResult result = super.parseJsonNode(path, node, options);
+    return result;
   }
 
   Map<String, Map<String, JsonNode>> removedPropertyDefaults() {
