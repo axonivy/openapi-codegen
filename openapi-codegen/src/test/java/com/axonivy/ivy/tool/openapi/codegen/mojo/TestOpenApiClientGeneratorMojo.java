@@ -88,9 +88,8 @@ class TestOpenApiClientGeneratorMojo {
     mojo.execute();
     var model = mojo.outputDir.resolve("com/test/Defaults.java");
     assertThat(Files.readString(model))
-        .contains("private String name = sample;")
-        .contains("name = sample;")
-        .doesNotContain("name = \"sample\";");
+      .contains("private String name = \"sample\";")
+      .contains("name = \"sample\";");
   }
 
   @Test
