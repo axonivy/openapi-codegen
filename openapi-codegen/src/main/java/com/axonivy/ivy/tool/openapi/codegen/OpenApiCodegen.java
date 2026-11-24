@@ -8,7 +8,6 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.axonivy.ivy.tool.openapi.codegen.defaults.PropertyDefaultAssigner;
 import com.axonivy.ivy.tool.openapi.codegen.filter.FilteringGenerator;
 import com.axonivy.ivy.tool.openapi.codegen.filter.ProgressFilter;
 import com.axonivy.ivy.tool.openapi.codegen.filter.SchemaFilter;
@@ -19,7 +18,7 @@ import io.swagger.codegen.v3.CodegenArgument;
 import io.swagger.codegen.v3.CodegenConfig;
 import io.swagger.codegen.v3.CodegenConstants;
 import io.swagger.v3.oas.models.OpenAPI;
-import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.models.media.Schema;
 
 /**
  * @author rew
@@ -27,16 +26,10 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class OpenApiCodegen {
   private final OpenAPI openApi;
-  private final Map<String, Map<String, JsonNode>> propertyDefaults;
   private String modelPkg;
 
   public OpenApiCodegen(OpenAPI openApi) {
-    this(openApi, Map.of());
-  }
-
-  public OpenApiCodegen(OpenAPI openApi, Map<String, Map<String, JsonNode>> propertyDefaults) {
     this.openApi = openApi;
-    this.propertyDefaults = propertyDefaults;
     this.modelPkg = "com.axonivy.client";
   }
 
@@ -56,8 +49,6 @@ public class OpenApiCodegen {
     input.getConfig().setOutputDir(outDir.getAbsolutePath());
     return modelsOnly(() -> new FilteringGenerator()
         .filter(new SchemaFilter())
-        .filter(new PropertyDefaultAssigner(propertyDefaults,
-            (io.swagger.codegen.v3.generators.java.JavaClientCodegen) input.getConfig()))
         .filter(new ProgressFilter(openApi))
         .opts(input).generate());
   }
@@ -70,7 +61,16 @@ public class OpenApiCodegen {
   }
 
   private static CodegenConfig newJerseyCodegen() {
-    CodegenConfig codegen = new io.swagger.codegen.v3.generators.java.JavaClientCodegen();
+    CodegenConfig codegen = new io.swagger.codegen.v3.generators.java.JavaClientCodegen() {
+      @Override
+      public String toDefaultValue(@SuppressWarnings("rawtypes") Schema schema) {
+        var value = DefaultValueSupplier.toDefaultValue(schema);
+        if (value != null) {
+          return value;
+        }
+        return super.toDefaultValue(schema);
+      }
+    };
     codegen.setLibrary(DEFAULT.REST_LIB);
     return codegen;
   }

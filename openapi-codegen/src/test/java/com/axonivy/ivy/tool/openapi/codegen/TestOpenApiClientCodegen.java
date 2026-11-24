@@ -18,11 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.yaml.snakeyaml.LoaderOptions;
 
-import com.axonivy.ivy.tool.openapi.codegen.defaults.PropertyDefaultAssigner;
 import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.TextNode;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -157,8 +153,9 @@ class TestOpenApiClientCodegen {
       var parsed = new OpenApiSpecParser().parse(in).orElseThrow();
       assertThat(parsed.rawSpec()).contains("\"default\":\"TestWorkflow\"");
       var openApi = parsed.api();
-      assertThat(openApi.getOpenapi()).isEqualTo("3.1.0");
-      var generated = new OpenApiCodegen(openApi, parsed.propertyDefaults()).generateSources(client.toFile());
+      assertThat(openApi.getOpenapi())
+        .isEqualTo("3.0.3");
+      var generated = new OpenApiCodegen(openApi).generateSources(client.toFile());
 
       var processingCompleted = generated.stream()
           .filter(file -> file.getName().endsWith("ProcessingCompleted.java"))
@@ -189,6 +186,7 @@ class TestOpenApiClientCodegen {
                 "created": {"type": "string", "format": "date", "default": "2024-01-02"},
                 "occurredAt": {"type": "string", "format": "date-time", "default": "2024-01-02T03:04:05Z"},
                 "identifier": {"type": "string", "format": "uuid", "default": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"},
+                "identifierNull": {"type": "string", "format": "uuid", "default": "null"},
                 "labels": {
                   "type": "array",
                   "items": {"type": "string"},
@@ -206,28 +204,90 @@ class TestOpenApiClientCodegen {
       }
       """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
-    assertThat(parsed.propertyDefaults().get("DefaultValues"))
-        .containsKeys("label", "count", "ratio", "enabled", "labels", "metadata", "optional");
-
-    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    var generated = new OpenApiCodegen(parsed.api()).generateSources(client.toFile());
     var source = Files.readString(generated.stream()
         .filter(file -> "DefaultValues.java".equals(file.getName()))
         .findFirst().orElseThrow().toPath());
     assertThat(source)
         .contains("label = \"sample\";")
-        .contains("count = Integer.valueOf(\"3\");")
-        .contains("ratio = Double.valueOf(\"0.5\");")
+        .contains("count = 3;")
+        .contains("ratio = new BigDecimal(0.5);")
         .contains("enabled = false;")
-        .contains("state = \"ready\";")
-        .contains("created = \"2024-01-02\";")
-        .contains("occurredAt = \"2024-01-02T03:04:05Z\";")
-        .contains("identifier = \"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\";")
-        .contains("labels = java.util.Arrays.asList(\"one\", \"two\");")
-        .contains("metadata = new java.util.LinkedHashMap<String, Object>() {{")
-        .contains("put(\"count\", Integer.valueOf(\"2\"));")
-        .contains("put(\"optional\", null);")
+        .contains("state = StateEnum.READY;")
+        .contains("created = LocalDate.parse(\"2024-01-02\");")
+        .contains("occurredAt = OffsetDateTime.parse(\"2024-01-02T03:04:05Z\");")
+        .contains("identifier = UUID.fromString(\"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\");")
+        .contains("identifierNull = null;")
+        .contains("labels = null;")
+        .contains("metadata = null;")
         .contains("optional = null;");
     compile(generated, client);
+  }
+
+  @Test
+  void openApi31_stringPropertiesNormalizeForCodegen(@TempDir Path client) throws IOException {
+    var spec = """
+        {
+          "openapi": "3.1.0",
+          "info": {"title": "String types", "version": "1"},
+          "paths": {},
+          "components": {
+            "schemas": {
+              "StringTypes": {
+                "type": "object",
+                "properties": {
+                  "plainText": {"type": "string"},
+                  "uuidText": {"type": "string", "format": "uuid"},
+                  "nullableText": {"type": ["string", "null"]}
+                }
+              }
+            }
+          }
+        }
+        """;
+    var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
+        var schemas = parsed.api().getComponents().getSchemas();
+        assertThat(schemas).containsKey("StringTypes");
+        var properties = schemas.get("StringTypes").getProperties();
+    var plainText = (Schema<?>) properties.get("plainText");
+    var uuidText = (Schema<?>) properties.get("uuidText");
+    var nullableText = (Schema<?>) properties.get("nullableText");
+
+    assertThat(parsed.api().getOpenapi()).isEqualTo("3.0.3");
+    assertThat(plainText.getTypes()).contains("string");
+    assertThat(plainText.getType()).isEqualTo("string");
+    assertThat(uuidText.getType()).isEqualTo("string");
+    assertThat(uuidText.getFormat()).isEqualTo("uuid");
+    assertThat(nullableText.getType()).isEqualTo("string");
+    assertThat(nullableText.getNullable()).isTrue();
+
+    var codegen31 = new io.swagger.codegen.v3.generators.java.JavaClientCodegen();
+    var model31 = codegen31.fromModel("StringTypes", parsed.api().getComponents().getSchemas().get("StringTypes"));
+    assertThat(model31.vars.stream().filter(property -> "plainText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("String");
+    assertThat(model31.vars.stream().filter(property -> "uuidText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("UUID");
+
+    var openApi30Spec = spec.replace("[\"string\", \"null\"]", "\"string\", \"nullable\": true")
+      .replace("3.1.0", "3.0.3");
+    var openApi30 = new OpenApiSpecParser().parse(openApi30Spec).orElseThrow();
+    var model30 = new io.swagger.codegen.v3.generators.java.JavaClientCodegen().fromModel(
+      "StringTypes", openApi30.api().getComponents().getSchemas().get("StringTypes"));
+    assertThat(model30.vars.stream().filter(property -> "plainText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("String");
+    assertThat(model30.vars.stream().filter(property -> "uuidText".equals(property.name))
+      .findFirst().orElseThrow().datatype).isEqualTo("UUID");
+    var generated30 = new OpenApiCodegen(openApi30.api()).generateSources(client.resolve("oas30").toFile());
+    var source30 = Files.readString(generated30.stream()
+        .filter(file -> "StringTypes.java".equals(file.getName()))
+        .findFirst().orElseThrow().toPath());
+    assertThat(source30).contains("private String plainText = null;", "private UUID uuidText = null;");
+
+    var generated31 = new OpenApiCodegen(parsed.api()).generateSources(client.resolve("oas31").toFile());
+    var source31 = Files.readString(generated31.stream()
+      .filter(file -> "StringTypes.java".equals(file.getName()))
+      .findFirst().orElseThrow().toPath());
+    assertThat(source31).contains("private String plainText = null;", "private UUID uuidText = null;");
   }
 
   @Test
@@ -272,67 +332,19 @@ class TestOpenApiClientCodegen {
       """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
 
-    assertThat(parsed.propertyDefaults().values().stream()
-        .flatMap(properties -> properties.values().stream())
-        .map(value -> java.util.Objects.requireNonNull(value).asText())
-        .toList()).contains("nested", "allOf", "anyOf");
-    assertThat(parsed.propertyDefaults().get("Parent_child"))
-        .containsEntry("nestedName", TextNode.valueOf("nested"));
-    assertThat(parsed.propertyDefaults().get("AllOfParent"))
-        .containsEntry("allOfName", TextNode.valueOf("allOf"));
-    assertThat(parsed.propertyDefaults().get("AnyOfParent"))
-        .containsEntry("anyOfName", TextNode.valueOf("anyOf"));
+    var allOfParent = parsed.api().getComponents().getSchemas().get("AllOfParent");
+    var firstAllOfSchema = (Schema<?>) allOfParent.getAllOf().get(0);
+    var allOfBaseName = (Schema<?>) firstAllOfSchema.getProperties().get("baseName");
+    assertThat(allOfBaseName.getTypes()).contains("string");
+    assertThat(allOfBaseName.getType()).isEqualTo("string");
 
-    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    var generated = new OpenApiCodegen(parsed.api()).generateSources(client.toFile());
     assertThat(generated.stream().map(file -> java.util.Objects.requireNonNull(file).getName()).toList())
         .contains("ParentChild.java", "AllOfParent.java", "AnyOfParent.java");
     var childModel = generated.stream().filter(file -> "ParentChild.java".equals(file.getName())).findFirst().orElseThrow();
     var childSource = Files.readString(childModel.toPath());
     assertThat(childSource).contains("nestedName = \"nested\";");
     compile(generated, client);
-  }
-
-  @Test
-  void textualDefaults_restoreEnumsAndFormattedTypes() {
-    var generatedModel = """
-      public class TypedDefaults {
-        public enum StatusEnum {
-          READY("ready");
-          private final String value;
-          StatusEnum(String value) { this.value = value; }
-          public static StatusEnum fromValue(String input) {
-            return READY;
-          }
-        }
-        private StatusEnum state = null;
-        private java.time.LocalDate created = null;
-        private java.time.OffsetDateTime occurredAt = null;
-        private java.util.UUID identifier = null;
-        private java.io.File path = null;
-        private java.util.List<java.io.File> paths = null;
-        private java.util.Map<String, java.io.File> metadata = null;
-      }
-      """;
-    Map<String, Map<String, JsonNode>> defaults = Map.of("TypedDefaults", Map.of(
-        "state", TextNode.valueOf("ready"),
-        "created", TextNode.valueOf("2024-01-02"),
-        "occurredAt", TextNode.valueOf("2024-01-02T03:04:05Z"),
-        "identifier", TextNode.valueOf("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"),
-        "path", TextNode.valueOf("/tmp/default"),
-        "paths", JsonNodeFactory.instance.arrayNode().add("/tmp/default"),
-        "metadata", JsonNodeFactory.instance.objectNode().put("path", "/tmp/default")));
-
-    var assigner = new PropertyDefaultAssigner(defaults, new io.swagger.codegen.v3.generators.java.JavaClientCodegen());
-    var restored = assigner.apply("TypedDefaults.java", generatedModel);
-
-    assertThat(restored)
-        .contains("state = StatusEnum.fromValue(\"ready\");")
-        .contains("created = java.time.LocalDate.parse(\"2024-01-02\");")
-        .contains("occurredAt = java.time.OffsetDateTime.parse(\"2024-01-02T03:04:05Z\");")
-        .contains("identifier = java.util.UUID.fromString(\"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\");")
-        .contains("path = null;")
-        .contains("paths = null;")
-        .contains("metadata = null;");
   }
 
   @Test
@@ -378,17 +390,7 @@ class TestOpenApiClientCodegen {
       }
       """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
-    assertThat(parsed.propertyDefaults().values().stream()
-        .map(properties -> properties.get("label"))
-        .filter(java.util.Objects::nonNull)
-        .map(JsonNode::asText)
-        .toList()).containsExactly("inline");
-    assertThat(parsed.propertyDefaults().values().stream()
-        .map(properties -> properties.get("status"))
-        .filter(java.util.Objects::nonNull)
-        .map(JsonNode::asText)
-        .toList()).containsExactly("ready");
-    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    var generated = new OpenApiCodegen(parsed.api()).generateSources(client.toFile());
     var modelSources = generated.stream()
         .filter(file -> {
           try {
