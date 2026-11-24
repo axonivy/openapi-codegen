@@ -10,7 +10,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 
@@ -150,8 +152,10 @@ class TestOpenApiClientCodegen {
   @Test
   void openApi31_defaultInitializers(@TempDir Path client) throws IOException {
     try (var in = TstRes.load("natif-31.json")) {
-      var parsed = new OpenApiSpecParser().parse(in).orElseThrow();
-      assertThat(parsed.rawSpec()).contains("\"default\":\"TestWorkflow\"");
+      var parser = new OpenApiSpecParser();
+      var parsed = parser.parse(in).orElseThrow();
+      assertThat(parsed.rawSpec())
+        .contains("\"default\":\"TestWorkflow\"");
       var openApi = parsed.api();
       assertThat(openApi.getOpenapi())
         .isEqualTo("3.0.3");
@@ -163,6 +167,11 @@ class TestOpenApiClientCodegen {
       assertThat(Files.readString(processingCompleted.toPath()))
           .contains("workflowName = \"TestWorkflow\";")
           .doesNotContain("workflowName = null;");
+
+      var result = compile(generated, client);
+      assertThat(result.diagnostics())
+        .as("no compiler issues with OpenAPI 3.1 natif-31.json")
+        .isEmpty();
     }
   }
 
@@ -221,7 +230,7 @@ class TestOpenApiClientCodegen {
         .contains("labels = null;")
         .contains("metadata = null;")
         .contains("optional = null;");
-    compile(generated, client);
+    assertThat(compile(generated, client).success()).isTrue();
   }
 
   @Test
@@ -344,7 +353,52 @@ class TestOpenApiClientCodegen {
     var childModel = generated.stream().filter(file -> "ParentChild.java".equals(file.getName())).findFirst().orElseThrow();
     var childSource = Files.readString(childModel.toPath());
     assertThat(childSource).contains("nestedName = \"nested\";");
-    compile(generated, client);
+    assertThat(compile(generated, client).success()).isTrue();
+  }
+
+  @Test
+  void openApi31_singleAllOfRef_toDirectTypeRef(@TempDir Path client) throws IOException {
+    var spec = """
+      {
+        "openapi": "3.1.0",
+        "info": {"title": "natiF language", "version": "1"},
+        "paths": {},
+        "components": {
+          "schemas": {
+            "DeEnLanguage": {
+              "type": "string",
+              "enum": ["de", "en"],
+              "title": "DeEnLanguage"
+            },
+            "TYOProcessingParameters": {
+              "type": "object",
+              "properties": {
+                "language": {
+                  "allOf": [{"$ref": "#/components/schemas/DeEnLanguage"}],
+                  "description": "Language for processing"
+                }
+              }
+            }
+          }
+        }
+      }
+      """;
+    var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
+
+    var language = (Schema<?>) parsed.api().getComponents().getSchemas()
+      .get("TYOProcessingParameters").getProperties()
+      .get("language");
+    assertThat(language.get$ref())
+      .as("The 'language' property is transformed to a direct $ref")
+      .isEqualTo("#/components/schemas/DeEnLanguage");
+
+    var generated = new OpenApiCodegen(parsed.api()).generateSources(client.toFile());
+    var parameters = generated.stream()
+        .filter(file -> "TYOProcessingParameters.java".equals(file.getName()))
+        .findFirst().orElseThrow();
+    assertThat(Files.readString(parameters.toPath()))
+        .contains("private DeEnLanguage language = null;");
+    assertThat(compile(generated, client).success()).isTrue();
   }
 
   @Test
@@ -411,23 +465,25 @@ class TestOpenApiClientCodegen {
     assertThat(modelSources)
         .anySatisfy(source -> assertThat(source).contains("label = \"inline\";"))
         .anySatisfy(source -> assertThat(source).contains("status = \"ready\";"));
-    compile(generated, client);
+    assertThat(compile(generated, client).success()).isTrue();
   }
 
-  private static void compile(List<File> sources, @TempDir Path client) throws IOException {
+  private static CompileResult compile(List<File> sources, @TempDir Path client) throws IOException {
     var compiler = ToolProvider.getSystemJavaCompiler();
     var diagnostics = new DiagnosticCollector<JavaFileObject>();
     var classes = client.resolve("classes");
     Files.createDirectories(classes);
     try (var fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
       var units = fileManager.getJavaFileObjectsFromFiles(sources);
-      var compiled = compiler.getTask(null, fileManager, diagnostics,
+      CompilationTask task = compiler.getTask(null, fileManager, diagnostics,
           List.of("-classpath", System.getProperty("java.class.path"), "-proc:none", "-d", classes.toString()),
-          null, units).call();
-      assertThat(compiled)
-          .withFailMessage("Generated support spec models failed to compile: %s", diagnostics.getDiagnostics())
-          .isTrue();
+          null, units);
+      var compiled = task.call();
+      return new CompileResult(compiled, diagnostics.getDiagnostics());
     }
+  }
+
+  private record CompileResult(Boolean success, List<Diagnostic<? extends JavaFileObject>> diagnostics){
   }
 
   // @Test

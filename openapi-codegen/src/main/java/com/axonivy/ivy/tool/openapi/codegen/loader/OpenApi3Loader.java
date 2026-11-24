@@ -1,7 +1,5 @@
 package com.axonivy.ivy.tool.openapi.codegen.loader;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.JsonNode;
 
 import io.swagger.v3.parser.OpenAPIV3Parser;
@@ -18,6 +16,7 @@ class OpenApi3Loader extends OpenAPIV3Parser {
     if (doClean) {
       typeHintCleaner.visitNode(node);
     }
+    AllOfResolver.resolve(node);
     return super.parseJsonNode(path, node, options);
   }
 
