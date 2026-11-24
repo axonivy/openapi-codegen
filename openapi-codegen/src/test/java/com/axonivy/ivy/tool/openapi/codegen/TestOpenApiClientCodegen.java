@@ -18,11 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.yaml.snakeyaml.LoaderOptions;
 
-import com.axonivy.ivy.tool.openapi.codegen.defaults.PropertyDefaultAssigner;
 import com.axonivy.ivy.tool.openapi.codegen.loader.OpenApiSpecParser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.TextNode;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -159,7 +155,7 @@ class TestOpenApiClientCodegen {
       var openApi = parsed.api();
       assertThat(openApi.getOpenapi())
         .isEqualTo("3.0.3");
-      var generated = new OpenApiCodegen(openApi, parsed.propertyDefaults()).generateSources(client.toFile());
+      var generated = new OpenApiCodegen(openApi).generateSources(client.toFile());
 
       var processingCompleted = generated.stream()
           .filter(file -> file.getName().endsWith("ProcessingCompleted.java"))
@@ -190,6 +186,7 @@ class TestOpenApiClientCodegen {
                 "created": {"type": "string", "format": "date", "default": "2024-01-02"},
                 "occurredAt": {"type": "string", "format": "date-time", "default": "2024-01-02T03:04:05Z"},
                 "identifier": {"type": "string", "format": "uuid", "default": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"},
+                "identifierNull": {"type": "string", "format": "uuid", "default": "null"},
                 "labels": {
                   "type": "array",
                   "items": {"type": "string"},
@@ -207,23 +204,22 @@ class TestOpenApiClientCodegen {
       }
       """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
-    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    var generated = new OpenApiCodegen(parsed.api()).generateSources(client.toFile());
     var source = Files.readString(generated.stream()
         .filter(file -> "DefaultValues.java".equals(file.getName()))
         .findFirst().orElseThrow().toPath());
     assertThat(source)
         .contains("label = \"sample\";")
-        .contains("count = Integer.valueOf(\"3\");")
-        .contains("ratio = new java.math.BigDecimal(\"0.5\");")
+        .contains("count = 3;")
+        .contains("ratio = new BigDecimal(0.5);")
         .contains("enabled = false;")
-        .contains("state = StateEnum.fromValue(\"ready\");")
+        .contains("state = StateEnum.READY;")
         .contains("created = LocalDate.parse(\"2024-01-02\");")
         .contains("occurredAt = OffsetDateTime.parse(\"2024-01-02T03:04:05Z\");")
         .contains("identifier = UUID.fromString(\"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\");")
-        .contains("labels = java.util.Arrays.asList(\"one\", \"two\");")
-        .contains("metadata = new java.util.LinkedHashMap<String, Object>() {{")
-        .contains("put(\"count\", Integer.valueOf(\"2\"));")
-        .contains("put(\"optional\", null);")
+        .contains("identifierNull = null;")
+        .contains("labels = null;")
+        .contains("metadata = null;")
         .contains("optional = null;");
     compile(generated, client);
   }
@@ -342,56 +338,13 @@ class TestOpenApiClientCodegen {
     assertThat(allOfBaseName.getTypes()).contains("string");
     assertThat(allOfBaseName.getType()).isEqualTo("string");
 
-    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    var generated = new OpenApiCodegen(parsed.api()).generateSources(client.toFile());
     assertThat(generated.stream().map(file -> java.util.Objects.requireNonNull(file).getName()).toList())
         .contains("ParentChild.java", "AllOfParent.java", "AnyOfParent.java");
     var childModel = generated.stream().filter(file -> "ParentChild.java".equals(file.getName())).findFirst().orElseThrow();
     var childSource = Files.readString(childModel.toPath());
     assertThat(childSource).contains("nestedName = \"nested\";");
     compile(generated, client);
-  }
-
-  @Test
-  void textualDefaults_restoreEnumsAndFormattedTypes() {
-    var generatedModel = """
-      public class TypedDefaults {
-        public enum StatusEnum {
-          READY("ready");
-          private final String value;
-          StatusEnum(String value) { this.value = value; }
-          public static StatusEnum fromValue(String input) {
-            return READY;
-          }
-        }
-        private StatusEnum state = null;
-        private java.time.LocalDate created = null;
-        private java.time.OffsetDateTime occurredAt = null;
-        private java.util.UUID identifier = null;
-        private java.io.File path = null;
-        private java.util.List<java.io.File> paths = null;
-        private java.util.Map<String, java.io.File> metadata = null;
-      }
-      """;
-    Map<String, Map<String, JsonNode>> defaults = Map.of("TypedDefaults", Map.of(
-        "state", TextNode.valueOf("ready"),
-        "created", TextNode.valueOf("2024-01-02"),
-        "occurredAt", TextNode.valueOf("2024-01-02T03:04:05Z"),
-        "identifier", TextNode.valueOf("f81d4fae-7dec-11d0-a765-00a0c91e6bf6"),
-        "path", TextNode.valueOf("/tmp/default"),
-        "paths", JsonNodeFactory.instance.arrayNode().add("/tmp/default"),
-        "metadata", JsonNodeFactory.instance.objectNode().put("path", "/tmp/default")));
-
-    var assigner = new PropertyDefaultAssigner(defaults, new io.swagger.codegen.v3.generators.java.JavaClientCodegen());
-    var restored = assigner.apply("TypedDefaults.java", generatedModel);
-
-    assertThat(restored)
-        .contains("state = StatusEnum.fromValue(\"ready\");")
-        .contains("created = java.time.LocalDate.parse(\"2024-01-02\");")
-        .contains("occurredAt = java.time.OffsetDateTime.parse(\"2024-01-02T03:04:05Z\");")
-        .contains("identifier = java.util.UUID.fromString(\"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\");")
-        .contains("path = null;")
-        .contains("paths = null;")
-        .contains("metadata = null;");
   }
 
   @Test
@@ -437,7 +390,7 @@ class TestOpenApiClientCodegen {
       }
       """;
     var parsed = new OpenApiSpecParser().parse(spec).orElseThrow();
-    var generated = new OpenApiCodegen(parsed.api(), parsed.propertyDefaults()).generateSources(client.toFile());
+    var generated = new OpenApiCodegen(parsed.api()).generateSources(client.toFile());
     var modelSources = generated.stream()
         .filter(file -> {
           try {
