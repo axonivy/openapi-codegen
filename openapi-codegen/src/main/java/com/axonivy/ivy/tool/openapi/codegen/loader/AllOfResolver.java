@@ -17,12 +17,12 @@ public class AllOfResolver extends JsonNodeVisitor {
     resolver.replacements.forEach(AllOfReplacement::apply);
   }
 
-  private List<AllOfReplacement> replacements = new ArrayList<>();
+  private final List<AllOfReplacement> replacements = new ArrayList<>();
 
   @Override
   protected boolean visitObjectField(ObjectNode parent, String fieldName, JsonNode node,
       Iterator<String> fields) {
-    if (fieldName.equals("allOf") && node instanceof ArrayNode allOf) {
+    if ("allOf".equals(fieldName) && node instanceof ArrayNode allOf) {
       if (allOf.size() == 1 && allOf.get(0) instanceof ObjectNode type) {
         if (type.properties().size() == 1 && type.get("$ref") instanceof TextNode ref) {
           replacements.add(new AllOfReplacement(parent, fieldName, ref));
